@@ -1,0 +1,46 @@
+package com.jobplatform.job_recruitment_system.models;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.Data;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.ZonedDateTime;
+
+@Entity
+@Table(name = "candidates")
+@Data
+public class Candidate {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @OneToOne
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @JsonIgnore
+    private User user;
+
+    private String title;
+
+    @Column(columnDefinition = "TEXT")
+    private String bio;
+
+    @Column(name = "experience_years")
+    private Integer experienceYears = 0;
+
+    private String location;
+
+    @Column(name = "expected_salary_min")
+    private Integer expectedSalaryMin;
+
+    @Column(name = "expected_salary_max")
+    private Integer expectedSalaryMax;
+
+    @Column(name = "is_public")
+    private Boolean isPublic = false;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private ZonedDateTime updatedAt;
+}

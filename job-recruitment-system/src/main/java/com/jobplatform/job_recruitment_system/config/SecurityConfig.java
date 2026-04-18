@@ -36,16 +36,26 @@ public class SecurityConfig {
                         // 2. Cho phép xem danh sách Job (GET)
                         // Lưu ý: Khai báo cả "/api/jobs" và "/api/jobs/**" để chắc chắn
                         .requestMatchers(HttpMethod.GET, "/api/jobs", "/api/jobs/**").permitAll()
-
+                        .requestMatchers("/api/admin/ai/sync-legacy-data").permitAll()
                         .requestMatchers(HttpMethod.POST,"/api/jobs/*/apply").hasAuthority("CANDIDATE")
                         .requestMatchers(HttpMethod.POST,"/api/jobs/*/save").hasAuthority("CANDIDATE")
                         .requestMatchers(HttpMethod.DELETE,"/api/jobs/*/unsave").hasAuthority("CANDIDATE")
-                        .requestMatchers(HttpMethod.POST,"/api/jobs/{jobId}/apply").hasAuthority("CANDIDATE")
-                        .requestMatchers(HttpMethod.POST, "/api/jobs/**").hasAuthority("COMPANY")
-                        .requestMatchers(HttpMethod.PUT, "/api/jobs/**").hasAuthority("COMPANY")
-                        .requestMatchers(HttpMethod.DELETE, "/api/jobs/**").hasAuthority("COMPANY")
-                        // aply cv
-                        .requestMatchers("/api/applications/**").hasAuthority("CANDIDATE")
+                        .requestMatchers("/api/candidate/profile").hasAuthority("CANDIDATE")
+                        .requestMatchers("/api/company/onboarding").hasAuthority("COMPANY")
+                        .requestMatchers("/api/company/profile").hasAuthority("COMPANY")
+                        .requestMatchers("/api/jobs/company/job").hasAuthority("CANDIDATE")
+                        .requestMatchers(HttpMethod.POST,"/api/company/verify-license").hasAuthority("COMPANY")
+                        .requestMatchers(HttpMethod.GET,"/api/company/profile/*").hasAuthority("COMPANY")
+                        .requestMatchers(HttpMethod.GET,"/api/company/top-hiring").hasAuthority("CANDIDATE")
+                        .requestMatchers(HttpMethod.GET,"/api/company/search").hasAuthority("CANDIDATE")
+                        .requestMatchers(HttpMethod.PATCH,"/api/jobs/*/status").hasAuthority("COMPANY")
+                        .requestMatchers("/api/jobs/*").hasAuthority("COMPANY")
+                        .requestMatchers(HttpMethod.DELETE,"/api/jobs/*").hasAuthority("COMPANY")
+
+                        .requestMatchers(HttpMethod.POST,"/api/application/apply").hasAuthority("CANDIDATE")
+                        .requestMatchers(HttpMethod.GET, "/api/applications/job/**").hasAuthority("COMPANY")
+
+                        .requestMatchers("/ws/**").permitAll()
                         // 4. Các request còn lại phải đăng nhập
                         .anyRequest().authenticated()
                 )
@@ -58,7 +68,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("http://localhost:5173"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 

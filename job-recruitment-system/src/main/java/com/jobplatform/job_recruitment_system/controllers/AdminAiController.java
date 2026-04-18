@@ -19,10 +19,8 @@ public class AdminAiController {
     @PostMapping("/sync-legacy-data")
     public ResponseEntity<?> syncAllOldData() {
 
-        // Gọi hàm chạy ngầm
         aiMatchingService.syncLegacyData();
 
-        // Trả về kết quả ngay lập tức cho Frontend/Postman khỏi phải chờ đợi
         return ResponseEntity.ok(Map.of(
                 "status", "success",
                 "message", "Lệnh đồng bộ đã được kích hoạt. Hệ thống đang chạy ngầm, vui lòng kiểm tra console log ở Backend để xem tiến độ!"

@@ -36,10 +36,11 @@ public class Company {
     private String taxCode;
 
     @Column(name = "license_image_url")
-    private String licenseImageUrl; // Link ảnh GPKD
+    private String licenseImageUrl;
 
     @Column(name = "is_verified")
     private boolean isVerified = false;
 
+    @Column(name = "url_logo")
     private String logoUrl;
 }

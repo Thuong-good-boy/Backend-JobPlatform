@@ -19,7 +19,6 @@ public class JobResponse {
     private String salaryRange;
     private List<String> skills;
     private String location;
-
     private int matchScore;
     private String matchReason;
 }

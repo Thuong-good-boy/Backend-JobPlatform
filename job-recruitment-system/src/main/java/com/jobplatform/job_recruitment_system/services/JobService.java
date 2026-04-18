@@ -1,32 +1,39 @@
 package com.jobplatform.job_recruitment_system.services;
 
-import com.jobplatform.job_recruitment_system.dtos.JobPostRequest;
+import com.jobplatform.job_recruitment_system.dtos.request.JobPostRequest;
 import com.jobplatform.job_recruitment_system.dtos.JobRecommendationDTO;
 import com.jobplatform.job_recruitment_system.dtos.JobResponse;
+import com.jobplatform.job_recruitment_system.exceptions.AppException;
+import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
+import com.jobplatform.job_recruitment_system.mapper.JobMapper;
 import com.jobplatform.job_recruitment_system.models.*;
 import com.jobplatform.job_recruitment_system.repositories.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class JobService {
 
-    @Autowired private JobRepository jobRepository;
-    @Autowired private UserRepository userRepository;
-    @Autowired private CompanyRepository companyRepository;
-    @Autowired private SkillRepository skillRepository;
-    @Autowired private  CvRepository cvRepository;
-    @Autowired private MatchScoreRepository matchScoreRepository;
+     private final JobRepository jobRepository;
+     private final UserService userService;
+     private final CompanyRepository companyRepository;
+     private final SkillRepository skillRepository;
+     private final CvService cvService;
+     private final MatchScoreRepository matchScoreRepository;
+    private final ApplicationRepository applicationRepository;
+    private final SavedJobRepository savedJobRepository;
+    private final JobMapper jobMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public Object getJobsForUser(Long userId) {
@@ -34,7 +41,7 @@ public class JobService {
             return jobRepository.findAll();
         }
 
-        Cv userCv = cvRepository.findFirstByUser_IdOrderByCreatedAtDesc(userId).orElse(null);
+        Cv userCv = cvService.getFirstCv (userId).orElse(null);
         if (userCv == null) {
             return jobRepository.findAll();
         }
@@ -66,52 +73,41 @@ public class JobService {
                 .toList();
     }
 
-
+    public Optional<Job> getJobsById(Long jobId){
+        return  jobRepository.findById(jobId);
+    }
 
 
     @Transactional
     public Job postJob(JobPostRequest request) {
-        // 1. Lấy email của User đang đăng nhập từ Security Context
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long userId = userService.getCurrentUserId();
+        User user = userService.getUserId(userId).orElseThrow(() -> new AppException(ErrorCode.AUTH_008));
 
-        // 2. Tìm User trong DB
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
-
-        // 3. Tìm hồ sơ Công ty của User này (Chỉ Employer mới có Company)
         Company companyProfile = companyRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Bạn phải tạo hồ sơ công ty trước khi đăng tin!"));
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_003));
 
-        // 4. Tạo đối tượng Job mới và map dữ liệu từ request
-        Job job = new Job();
-        job.setTitle(request.getTitle());
-        job.setDescription(request.getDescription());
-        job.setSalaryMin(request.getSalaryMin());
-        job.setSalaryMax(request.getSalaryMax());
-        job.setLocation(request.getLocation());
-        job.setCreatedAt(LocalDateTime.now());
+        if (!companyProfile.isVerified()) {
+            throw new AppException(ErrorCode.COM_005);
+        }
 
-        // Thiết lập mối quan hệ với Company
+        Job job = jobMapper.fromJobPostRequest(request);
         job.setCompany(companyProfile);
+        job.setStatus(JobStatus.OPEN);
 
-        // 5. Xử lý danh sách Skill (nếu có)
-        if (request.getSkillNames() != null) {
+        if (request.getSkillNames() != null && !request.getSkillNames().isEmpty()) {
             Set<Skill> jobSkills = new HashSet<>();
             for (String skillName : request.getSkillNames()) {
-                // Tìm skill theo tên, nếu chưa có thì tạo mới (Chuẩn hóa dữ liệu AI)
                 Skill skill = skillRepository.findBySkillName(skillName)
                         .orElseGet(() -> skillRepository.save(new Skill(skillName)));
                 jobSkills.add(skill);
             }
             job.setSkills(jobSkills);
         }
-
-        // 6. Lưu vào Database và trả về kết quả
         return jobRepository.save(job);
     }
 
     public List<JobRecommendationDTO> searchJobs(String keyword, Long userId) {
-        Cv userCv = (userId == null) ? null : cvRepository.findFirstByUser_IdOrderByCreatedAtDesc(userId).orElse(null);
+        Cv userCv = (userId == null) ? null :  cvService.getFirstCv (userId).orElse(null);
 
         if (userCv == null) {
             List<Job> jobs = jobRepository.searchJobs(keyword);
@@ -149,11 +145,73 @@ public class JobService {
             return jobRepository.findById(jodId);
         }
 
-        Cv userCv = cvRepository.findFirstByUser_IdOrderByCreatedAtDesc(userId).orElse(null);
+        Cv userCv =  cvService.getFirstCv (userId).orElse(null);
         if (userCv == null) {
             return jobRepository.findById(jodId);
         }
         return  matchScoreRepository.findRecommendedJobsByJobId(jodId,userCv.getId());
+    }
+    public List<Job> getJobsByCompanyUserId(Long userId) {
+        return  jobRepository.findByCompanyIdCustom(userId);
+    }
+    @Transactional
+    public Job updateJobStatus(Long jobId, JobStatus newStatus, Long userId) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_001));
+
+        if (!job.getCompany().getUser().getId().equals(userId)) {
+            throw new AppException(ErrorCode.JOB_005);
+        }
+        job.setStatus(newStatus);
+        return jobRepository.save(job);
+    }
+
+    @Transactional
+    public Job updateJob(Long jobId, JobPostRequest request, Long userId) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_001));
+
+        if (!job.getCompany().getUser().getId().equals(userId)) {
+            throw new AppException(ErrorCode.JOB_004);
+        }
+        jobMapper.updateJob(request, job);
+        if (request.getSkillNames() != null) {
+            Set<Skill> jobSkills = new HashSet<>();
+            for (String skillName : request.getSkillNames()) {
+                Skill skill = skillRepository.findBySkillName(skillName)
+                        .orElseGet(() -> skillRepository.save(new Skill(skillName)));
+                jobSkills.add(skill);
+            }
+            job.setSkills(jobSkills);
+        }
+
+        return jobRepository.save(job);
+    }
+
+    @Transactional
+    public void deleteJob(Long jobId, Long userId) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_001));
+
+        if (!job.getCompany().getUser().getId().equals(userId)) {
+            throw new AppException(ErrorCode.JOB_006);
+        }
+
+        applicationRepository.deleteByJobId(jobId);
+
+        savedJobRepository.deleteByJobId(jobId);
+
+        job.getSkills().clear();
+        jobRepository.save(job);
+
+        jobRepository.delete(job);
+    }
+
+    public List<JobRecommendationDTO> findRecommendedJobsByCvIdAndCompanyId(Long userId, Long companyId) {
+        Cv cv = cvService.getFirstCv(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.CV_004));
+
+        return matchScoreRepository.findRecommendedJobsByCvIdAndCompanyId(cv.getId(), companyId);
     }
 
 }

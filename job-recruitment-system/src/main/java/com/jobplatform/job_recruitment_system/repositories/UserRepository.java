@@ -14,8 +14,5 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
-    @Modifying
-    @Transactional
-    @Query("DELETE FROM User u WHERE u.isActive = false AND u.createdAt < :deadline")
-    void deleteUnverifiedAccounts(@Param("deadline") LocalDateTime deadline);
+    Optional<User> findById(Long userId);
 }

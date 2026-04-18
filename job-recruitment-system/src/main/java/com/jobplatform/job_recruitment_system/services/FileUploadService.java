@@ -16,7 +16,6 @@ public class FileUploadService {
 
     private final Cloudinary cloudinary;
 
-    // Hàm Upload
     public String uploadFile(MultipartFile file) throws IOException {
         Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
                 ObjectUtils.asMap(
@@ -26,7 +25,6 @@ public class FileUploadService {
         return uploadResult.get("url").toString();
     }
 
-    // --- THÊM 2 HÀM NÀY VÀO ---
 
     // Hàm Xóa ảnh
     public void deleteImage(String imageUrl) {

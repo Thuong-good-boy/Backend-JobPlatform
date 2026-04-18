@@ -17,60 +17,68 @@ import java.util.function.Function;
 @Service
 public class JwtService {
     @Value("${jwt.secret}")
-     private  String secretKey;
+    private String secretKey;
 
     @Value("${jwt.expiration}")
-    private  long jwtExpriration;
+    private long jwtExpiration;
 
-    public  String generateToken(String email){
-        Map<String,Object> claims= new HashMap<>();
-        return createToken(claims,email);
-    }
-    //Tạo ra một chuỗi JWT hoàn chỉnh, có chữ ký bảo mật, đại diện cho người dùng đã đăng nhập.
-    private  String createToken(Map<String,Object> claims,String subject){
-            return Jwts.builder().setClaims(claims).setSubject(subject)
-                    .setIssuedAt(new Date(System.currentTimeMillis()))
-                    .setExpiration(new Date(System.currentTimeMillis() + jwtExpriration))
-                    .signWith(getSignKey(), SignatureAlgorithm.HS256).compact();
+    @Value("${jwt.refresh-expiration}")
+    private long refreshExpiration;
 
+    // 1. Tạo Access Token (Hạn ngắn)
+    public String generateAccessToken(String email) {
+        return createToken(new HashMap<>(), email, jwtExpiration);
     }
 
-
-
-    public    String extractUsername (String token){
-        return  extractClaim(token, Claims::getSubject);
+    // 2. Tạo Refresh Token (Hạn dài)
+    public String generateRefreshToken(String email) {
+        return createToken(new HashMap<>(), email, refreshExpiration);
     }
 
-    public  boolean isTokenValid(String token, String username){
-            final String extractedUsername = extractUsername(token);
-            return  (extractedUsername.equals(username) && !isTokenExpired(token));
+    // Hàm dùng chung để tạo Token
+    private String createToken(Map<String, Object> claims, String subject, long expiration) {
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(subject)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(getSignKey(), SignatureAlgorithm.HS256)
+                .compact();
     }
 
+    // --- Các hàm hỗ trợ giải mã và kiểm tra giữ nguyên ---
 
+    public String extractUsername(String token) {
+        return extractClaim(token, Claims::getSubject);
+    }
 
-    private  <T> T extractClaim(String token, Function<Claims,T> claimsResolver){
-        final  Claims claims = extractAllClaims(token);
+    public boolean isTokenValid(String token, String username) {
+        final String extractedUsername = extractUsername(token);
+        return (extractedUsername.equals(username) && !isTokenExpired(token));
+    }
+
+    private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
-    // giải mã token
-    private  Claims extractAllClaims(String token){
-        return  Jwts.parserBuilder()
+
+    private Claims extractAllClaims(String token) {
+        return Jwts.parserBuilder()
                 .setSigningKey(getSignKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
     }
-    // kiểm tra hết hạn
-    private boolean isTokenExpired(String token){
-        return  extractExpiration(token).before(new Date());
+
+    private boolean isTokenExpired(String token) {
+        return extractExpiration(token).before(new Date());
     }
 
-    private  Date extractExpiration (String token){
-        return  extractClaim(token, Claims::getExpiration);
+    private Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
     }
-    //    getSignKey() chuyển chuỗi secret dạng Base64 từ cấu hình thành một Key chuẩn,
-    //    đủ mạnh để ký JWT bằng thuật toán HS256 theo yêu cầu của thư viện JJWT.
-    private Key getSignKey(){
+
+    private Key getSignKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }

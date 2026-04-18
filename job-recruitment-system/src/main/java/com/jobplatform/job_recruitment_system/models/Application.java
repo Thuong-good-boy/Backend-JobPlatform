@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "applications")
 @Getter
@@ -28,8 +27,12 @@ public class Application {
 
     @ManyToOne
     @JoinColumn(name = "cv_id")
-    @JsonIgnoreProperties({"user", "cvData"}) // Chỉ lấy ID và Link CV, không lấy ngược User
+    @JsonIgnoreProperties({"user", "cvData"})
     private Cv cv;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @Enumerated(EnumType.STRING)
     private AppStatus status = AppStatus.APPLIED;

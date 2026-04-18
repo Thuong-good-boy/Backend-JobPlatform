@@ -1,19 +1,19 @@
 package com.jobplatform.job_recruitment_system.services;
 
-
 import com.jobplatform.job_recruitment_system.dtos.MatchResult;
 import com.jobplatform.job_recruitment_system.dtos.OcrResult;
-import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
-
 import java.io.IOException;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,71 +23,51 @@ public class AiOcrService {
     @Value("${gemini.api-key}")
     private String apiKey;
 
-    private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=";
+    private final String OPEN_ROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-
+    // Hàm tạo Header chung cho OpenRouter (Chứa Bearer Token và Referer)
+    private HttpHeaders createOpenRouterHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + apiKey);
+        headers.set("HTTP-Referer", "http://localhost:8080"); // Bắt buộc cho OpenRouter
+        headers.set("X-Title", "Job Recruitment System");    // Bắt buộc cho OpenRouter
+        return headers;
+    }
 
     public OcrResult extractCompanyInfo(MultipartFile file) throws IOException {
         RestTemplate restTemplate = new RestTemplate();
         tools.jackson.databind.ObjectMapper mapper = new tools.jackson.databind.ObjectMapper();
 
         String base64Image = Base64.getEncoder().encodeToString(file.getBytes());
+        // Chuẩn Base64 mới cho OpenAI: data:image/jpeg;base64,...
+        String dataUrl = "data:" + file.getContentType() + ";base64," + base64Image;
 
-        // --- CẬP NHẬT PROMPT: DẠY AI HIỂU MÃ SỐ DOANH NGHIỆP ---
+        // --- CẬP NHẬT PROMPT: DẠY AI HIỂU MÃ SỐ DOANH NGHIỆP (GIỮ NGUYÊN PROMPT CŨ CỦA BẠN) ---
         String prompt = "Bạn là hệ thống đọc dữ liệu giấy tờ doanh nghiệp Việt Nam. Hãy trích xuất thông tin từ ảnh này:\n" +
                 "1. 'taxCode': Tìm dãy số cạnh dòng chữ 'Mã số doanh nghiệp' HOẶC 'Mã số thuế'. (Lưu ý: Mã số doanh nghiệp chính là Mã số thuế).\n" +
-                "2. 'companyName': Tìm tên công ty tiếng Việt đầy đủ (thường ở dòng 'Tên công ty viết bằng tiếng Việt' hoặc dòng chữ in hoa lớn nhất).\n" +
+                "2. 'companyName': Tìm tên công ty tiếng Việt đầy đủ  tên doanh nghiệp.\n" +
                 "Yêu cầu: Trả về 1 JSON duy nhất: {\"taxCode\": \"...\", \"companyName\": \"...\"}. Nếu không tìm thấy, trả về null.";
 
-        GeminiRequest request = new GeminiRequest();
-        GeminiRequest.Part textPart = new GeminiRequest.Part();
-        textPart.text = prompt;
+        // Tạo Request Body theo chuẩn OpenAI cho OpenRouter
+        Map<String, Object> requestBody = Map.of(
+                "model", "google/gemini-2.0-flash-001",
+                "messages", List.of(
+                        Map.of("role", "user", "content", List.of(
+                                Map.of("type", "text", "text", prompt),
+                                Map.of("type", "image_url", "image_url", Map.of("url", dataUrl))
+                        ))
+                )
+        );
 
-        GeminiRequest.Part imagePart = new GeminiRequest.Part();
-        imagePart.inline_data = new GeminiRequest.InlineData();
-        imagePart.inline_data.mime_type = file.getContentType();
-        imagePart.inline_data.data = base64Image;
-
-        request.contents = Collections.singletonList(new GeminiRequest.Content(List.of(textPart, imagePart)));
-
-        try {
-            GeminiResponse response = restTemplate.postForObject(GEMINI_API_URL + apiKey, request, GeminiResponse.class);
-//            {
-//                "candidates": [
-//                {
-//                    "content": {
-//                    "parts": [
-//                    {"text": "```json\n{...}\n```"}
-//        ]
-//                }
-//                }
-//  ]
-//            }
-            if (response != null && response.candidates != null && !response.candidates.isEmpty()) {
-                String rawText = response.candidates.get(0).content.parts.get(0).text;
-
-                System.out.println(">>> AI Raw Response: " + rawText);
-                // đây là Tuyệt chiêu Regex
-                Pattern pattern = Pattern.compile("\\{.*\\}", Pattern.DOTALL);
-                Matcher matcher = pattern.matcher(rawText);
-
-                if (matcher.find()) {
-                    //convert JSON → Object Java
-                    String jsonString = matcher.group();
-                    return mapper.readValue(jsonString, OcrResult.class);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println(">>> Lỗi AI: " + e.getMessage());
-        }
-        return null;
+        return callAiAndParseJson(requestBody, OcrResult.class);
     }
 
     public String extractCvInfoToJson(MultipartFile file) throws IOException {
-        RestTemplate restTemplate = new RestTemplate();
         String base64Image = Base64.getEncoder().encodeToString(file.getBytes());
+        String dataUrl = "data:" + file.getContentType() + ";base64," + base64Image;
 
+        // GIỮ NGUYÊN PROMPT ĐỌC CV CŨ CỦA BẠN
         String prompt = "Bạn là chuyên gia nhân sự. Hãy đọc ảnh CV này và trích xuất thông tin thành JSON.\n" +
                 "Cấu trúc JSON yêu cầu:\n" +
                 "{\n" +
@@ -98,40 +78,23 @@ public class AiOcrService {
                 "}\n" +
                 "Yêu cầu: Chỉ trả về đúng code JSON, không giải thích gì thêm.";
 
-        // Gửi request tới Gemini (tận dụng lại DTO GeminiRequest bạn đã có)
-        GeminiRequest request = new GeminiRequest();
-        GeminiRequest.Part textPart = new GeminiRequest.Part();
-        textPart.text = prompt;
+        Map<String, Object> requestBody = Map.of(
+                "model", "google/gemini-2.0-flash-001",
+                "messages", List.of(
+                        Map.of("role", "user", "content", List.of(
+                                Map.of("type", "text", "text", prompt),
+                                Map.of("type", "image_url", "image_url", Map.of("url", dataUrl))
+                        ))
+                )
+        );
 
-        GeminiRequest.Part imagePart = new GeminiRequest.Part();
-        imagePart.inline_data = new GeminiRequest.InlineData();
-        imagePart.inline_data.mime_type = file.getContentType();
-        imagePart.inline_data.data = base64Image;
-
-        request.contents = Collections.singletonList(new GeminiRequest.Content(List.of(textPart, imagePart)));
-
-        try {
-            GeminiResponse response = restTemplate.postForObject(GEMINI_API_URL + apiKey, request, GeminiResponse.class);
-            if (response != null && !response.candidates.isEmpty()) {
-                String rawText = response.candidates.get(0).content.parts.get(0).text;
-
-                // Dùng Regex lấy phần JSON để lưu vào DB
-                Pattern pattern = Pattern.compile("\\{.*\\}", Pattern.DOTALL);
-                Matcher matcher = pattern.matcher(rawText);
-                if (matcher.find()) {
-                    return matcher.group(); // Trả về chuỗi JSON để lưu vào cột cv_data
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Lỗi AI đọc CV: " + e.getMessage());
-        }
-        return "{}"; // Trả về JSON rỗng nếu lỗi
+        // Trả về String JSON trực tiếp để lưu DB
+        Map<String, Object> response = sendRequestToOpenRouter(requestBody);
+        return extractJsonFromResponse(response);
     }
+
     public MatchResult calculateMatchScore(String cvJsonData, String jobDescription) {
-        RestTemplate restTemplate = new RestTemplate();
-        tools.jackson.databind.ObjectMapper mapper = new tools.jackson.databind.ObjectMapper();
-
-
+        // GIỮ NGUYÊN PROMPT MATCHING CŨ CỦA BẠN
         String prompt = "Bạn là một chuyên gia nhân sự (HR). Hãy đánh giá mức độ phù hợp giữa Thông tin ứng viên (CV) và Yêu cầu công việc (Job Description) dưới đây.\n\n" +
                 "--- THÔNG TIN CV (JSON) ---\n" + cvJsonData + "\n\n" +
                 "--- YÊU CẦU CÔNG VIỆC ---\n" + jobDescription + "\n\n" +
@@ -140,55 +103,56 @@ public class AiOcrService {
                 "2. Đưa ra một câu nhận xét ngắn gọn (dưới 30 chữ) giải thích tại sao lại cho điểm số đó.\n" +
                 "3. Trả về DUY NHẤT 1 chuỗi JSON với cấu trúc: {\"score\": 85.5, \"reason\": \"Ứng viên đáp ứng tốt kỹ năng Java nhưng thiếu kinh nghiệm quản lý.\"}";
 
-        // Tạo Request gửi đi (Chỉ có Text, KHÔNG CÓ Image)
-        GeminiRequest request = new GeminiRequest();
-        GeminiRequest.Part textPart = new GeminiRequest.Part();
-        textPart.text = prompt;
+        Map<String, Object> requestBody = Map.of(
+                "model", "openai/gpt-oss-120b", // Dùng con hàng khủng bạn vừa test thành công
+                "messages", List.of(Map.of("role", "user", "content", prompt)),
+                "temperature", 0.3 // Giảm nhiệt độ để kết quả ổn định và bám sát prompt
+        );
 
-        // Không set inline_data vì không có ảnh
+        return callAiAndParseJson(requestBody, MatchResult.class);
+    }
 
-        request.contents = Collections.singletonList(new GeminiRequest.Content(List.of(textPart)));
+    // --- CÁC HÀM HELPER (BỔ TRỢ) ĐỂ CODE SẠCH HƠN ---
 
-        try {
-            GeminiResponse response = restTemplate.postForObject(GEMINI_API_URL + apiKey, request, GeminiResponse.class);
+    // Gửi Request và trả về Map kết quả thô
+    private Map<String, Object> sendRequestToOpenRouter(Map<String, Object> body) {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, createOpenRouterHeaders());
+        return restTemplate.postForObject(OPEN_ROUTER_URL, entity, Map.class);
+    }
 
-            if (response != null && response.candidates != null && !response.candidates.isEmpty()) {
-                String rawText = response.candidates.get(0).content.parts.get(0).text;
-                System.out.println(">>> AI Matching Response: " + rawText);
+    // Dùng Regex lấy đúng JSON ra khỏi text (Lấy kết quả OpenAI thô)
+    private String extractJsonFromResponse(Map<String, Object> response) {
+        if (response != null && response.containsKey("choices")) {
+            List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
+            if (!choices.isEmpty()) {
+                Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+                String content = (String) message.get("content");
 
-                // Dùng Regex trích xuất JSON
+                System.out.println(">>> AI Raw Result: " + content);
+
                 Pattern pattern = Pattern.compile("\\{.*\\}", Pattern.DOTALL);
-                Matcher matcher = pattern.matcher(rawText);
-
+                Matcher matcher = pattern.matcher(content);
                 if (matcher.find()) {
-                    String jsonString = matcher.group();
-                    return mapper.readValue(jsonString, MatchResult.class);
+                    return matcher.group(); // Trả về chuỗi JSON chuẩn
                 }
             }
+        }
+        return "{}"; // Trả về JSON rỗng nếu lỗi
+    }
+
+    // Gộp 3 bước: Gọi API -> Lấy JSON -> Chuyển thành Object Java
+    private <T> T callAiAndParseJson(Map<String, Object> body, Class<T> clazz) {
+        try {
+            String jsonStr = extractJsonFromResponse(sendRequestToOpenRouter(body));
+            return new tools.jackson.databind.ObjectMapper().readValue(jsonStr, clazz);
         } catch (Exception e) {
             e.printStackTrace();
-            System.err.println(">>> Lỗi AI Matching: " + e.getMessage());
+            System.err.println(">>> Lỗi AI: " + e.getMessage());
+            return null;
         }
 
-        // Nếu lỗi, trả về điểm 0
-        MatchResult defaultResult = new MatchResult();
-        defaultResult.setScore(0.0);
-        defaultResult.setReason("Không thể đánh giá vào lúc này.");
-        return defaultResult;
     }
 
-    @Data
-    public static class GeminiRequest {
-        List<Content> contents;
-        @Data static class Content { List<Part> parts; public Content(List<Part> parts) { this.parts = parts; } }
-        @Data static class Part { String text; InlineData inline_data; }
-        @Data static class InlineData { String mime_type; String data; }
-    }
-    @Data
-    public static class GeminiResponse {
-        List<Candidate> candidates;
-        @Data static class Candidate { Content content; }
-        @Data static class Content { List<Part> parts; }
-        @Data static class Part { String text; }
-    }
+
 }

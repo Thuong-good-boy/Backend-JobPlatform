@@ -19,25 +19,28 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Cv {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    @JsonIgnoreProperties({"password", "jobs", "role", "authorities"}) // Tránh lộ info User
+    @JsonIgnoreProperties({"password", "jobs", "role", "authorities"})
     private User user;
 
     @Column(name = "file_url")
-    private String fileUrl; // Link file PDF
+    private String fileUrl;
 
-    // Tạm thời để String cho cột JSONB để tránh lỗi thư viện phức tạp lúc này
-    // Sau này muốn xử lý JSON sâu hơn thì dùng thư viện hibernate-types sau
+    @Column(name = "cv_name")
+    private String cvName;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "cv_data", columnDefinition = "jsonb")
     private String cvData;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    @Column(name = "active")
+    private boolean active = true;
 }

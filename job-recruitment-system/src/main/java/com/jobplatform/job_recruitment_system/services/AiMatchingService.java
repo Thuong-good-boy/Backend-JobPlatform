@@ -15,11 +15,45 @@ public class AiMatchingService {
     @Autowired private JobRepository jobRepository;
     @Autowired private CvRepository cvRepository;
 
+
     @Async
     public void processNewCv(Cv cv) {
+        // Nghỉ 5 giây để "cách ly" với bước đọc CV trước đó
+        try { Thread.sleep(5000); } catch (InterruptedException ignored) {}
+
         List<Job> allJobs = jobRepository.findAll();
         for (Job job : allJobs) {
             calculateAndSave(cv, job);
+            try { Thread.sleep(10000); } catch (InterruptedException ignored) {}
+        }
+    }
+
+    public void calculateAndSave(Cv cv, Job job) {
+        try {
+            MatchResult result = aiOcrService.calculateMatchScore(cv.getCvData(), job.getDescription());
+
+            if (result == null) return;
+
+            MatchScore ms = new MatchScore();
+            ms.setJob(job);
+            ms.setCv(cv);
+
+            // Đảm bảo khởi tạo ID nếu là EmbeddedId
+            if (ms.getId() == null) {
+                ms.setId(new MatchScoreId(job.getId(), cv.getId()));
+            }
+
+            ms.setScore(result.getScore());
+
+            // Dùng String.format để tránh lỗi nháy kép trong reason làm hỏng JSON
+            String safeReason = result.getReason().replace("\"", "'");
+            ms.setMatch_details("{\"reason\": \"" + safeReason + "\"}");
+
+            matchScoreRepository.save(ms);
+            System.out.println(">>> Đã lưu điểm cho Job: " + job.getTitle());
+
+        } catch (Exception e) {
+            System.err.println("Lỗi tính điểm cho Job " + job.getId() + ": " + e.getMessage());
         }
     }
 
@@ -31,33 +65,7 @@ public class AiMatchingService {
             calculateAndSave(cv, job); // Tận dụng lại hàm cũ
         }
     }
-    // Hàm dùng chung để tính và lưu
-    public void calculateAndSave(Cv cv, Job job) {
-        try {
-            // Gọi AI tính điểm
-            MatchResult result = aiOcrService.calculateMatchScore(cv.getCvData(), job.getDescription());
 
-            // Map dữ liệu vào Entity để khớp 5 cột DB
-            MatchScore ms = new MatchScore();
-            ms.setJob(job);
-            ms.setCv(cv);
-            ms.getId().setJobId(job.getId());
-            ms.getId().setCvId(cv.getId());
-            ms.setScore(result.getScore());
-            // Đóng gói lý do vào JSON cho cột match_details
-            ms.setMatch_details("{\"reason\": \"" + result.getReason() + "\"}");
-
-            matchScoreRepository.save(ms);
-            Thread.sleep(10000);
-        } catch (Exception e) {
-            System.err.println("Lỗi tính điểm cho CV " + cv.getId() + " - Job " + job.getId());
-            try {
-                Thread.sleep(15000); // dừng 15 giây
-            } catch (InterruptedException ex) {
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
     @Async
     public void syncLegacyData() {
         System.out.println(" [ADMIN] BẮT ĐẦU ĐỒNG BỘ DỮ LIỆU CŨ...");

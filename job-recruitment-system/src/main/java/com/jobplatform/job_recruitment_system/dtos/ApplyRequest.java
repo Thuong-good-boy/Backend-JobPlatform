@@ -1,10 +1,13 @@
 package com.jobplatform.job_recruitment_system.dtos;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class ApplyRequest {
+    @NotBlank(message = "JOB_REQUIRED")
     private Long jobId;
-    private Long cvId; // ID của hồ sơ trong bảng CVs
+    @NotBlank(message = "CV_REQUIRED")
+    private Long cvId;
     private String coverLetter;
 }

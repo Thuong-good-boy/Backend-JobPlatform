@@ -24,19 +24,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private JwtService jwtService;
     @Autowired
     private UserDetailsService userDetailsService;
-//    Authentication là object đại diện cho:
-//
-//    Trạng thái đăng nhập của người dùng.
-//
-//    Nó chứa:
-//
-//    principal (UserDetails hoặc username)
-//
-//    credentials (password hoặc null)
-//
-//    authorities (role)
-//
-//    authenticated (true/false)
+
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
@@ -73,13 +61,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            //  QUAN TRỌNG: Nếu Token lỗi (hết hạn, sai format...), ta KHÔNG throw lỗi.
-            // Ta chỉ log ra console để debug thôi.
             System.out.println("Lỗi xác thực Token: " + e.getMessage());
-
-            // Request vẫn sẽ đi tiếp xuống dưới.
-            // Nếu API là public (/api/jobs), nó vẫn sẽ được vào!
-            // Nếu API là private, SecurityConfig sẽ chặn lại sau.
         }
 
         // 3. Cho phép Request đi tiếp

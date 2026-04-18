@@ -15,7 +15,7 @@ public class EmailService {
 
     public void sendOtpEmail(String toEmail, String otpCode) throws MessagingException {
 
-        String verifyLink = "http://localhost:5173/verify?email="
+        String verifyLink = "http://localhost:5173/register-verify?email="
                 + toEmail + "&code=" + otpCode;
 
         MimeMessage message = mailSender.createMimeMessage();
