@@ -1,4 +1,4 @@
-package com.jobplatform.job_recruitment_system.dtos;
+package com.jobplatform.job_recruitment_system.dtos.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

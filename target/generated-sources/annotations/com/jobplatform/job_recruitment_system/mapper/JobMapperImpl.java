@@ -1,5 +1,6 @@
 package com.jobplatform.job_recruitment_system.mapper;
 
+import com.jobplatform.job_recruitment_system.dtos.Response.ListJobResponse;
 import com.jobplatform.job_recruitment_system.dtos.request.JobPostRequest;
 import com.jobplatform.job_recruitment_system.models.Job;
 import javax.annotation.processing.Generated;
@@ -7,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-18T16:07:23+0700",
+    date = "2026-04-20T08:05:32+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.6 (Oracle Corporation)"
 )
 @Component
@@ -41,5 +42,31 @@ public class JobMapperImpl implements JobMapper {
         target.setSalaryMin( source.getSalaryMin() );
         target.setSalaryMax( source.getSalaryMax() );
         target.setLocation( source.getLocation() );
+    }
+
+    @Override
+    public ListJobResponse fromJobtoListJobResponse(Job job) {
+        if ( job == null ) {
+            return null;
+        }
+
+        ListJobResponse listJobResponse = new ListJobResponse();
+
+        listJobResponse.setId( job.getId() );
+        listJobResponse.setTitle( job.getTitle() );
+        listJobResponse.setLocation( job.getLocation() );
+        if ( job.getSalaryMin() != null ) {
+            listJobResponse.setSalaryMin( job.getSalaryMin().intValue() );
+        }
+        if ( job.getSalaryMax() != null ) {
+            listJobResponse.setSalaryMax( job.getSalaryMax().intValue() );
+        }
+        if ( job.getStatus() != null ) {
+            listJobResponse.setStatus( job.getStatus().name() );
+        }
+        listJobResponse.setCreatedAt( job.getCreatedAt() );
+        listJobResponse.setSkills( maptoStrings( job.getSkills() ) );
+
+        return listJobResponse;
     }
 }

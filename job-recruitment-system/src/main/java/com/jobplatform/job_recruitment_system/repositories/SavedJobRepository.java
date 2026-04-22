@@ -25,5 +25,11 @@ public interface SavedJobRepository extends JpaRepository<SavedJob, Long> {
     @Modifying
     @Query("DELETE FROM SavedJob s WHERE s.job.id = :jobId")
     void deleteByJobId(@Param("jobId") Long jobId);
+    @Query("""
+    select count(s.id)
+    from Job j join  SavedJob s on j.id = s.job.id
+    where j.company.userId = :companyId
+""")
+    Long getTotalJobSave(@Param("companyId") Long companyId);
 
 }

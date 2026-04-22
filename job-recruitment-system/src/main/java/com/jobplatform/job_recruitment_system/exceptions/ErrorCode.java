@@ -78,7 +78,11 @@ public enum ErrorCode {
     INVALID_OTP("Mã OTP phải bao gồm đúng 6 chữ số!", HttpStatus.BAD_REQUEST),
     TOKEN_REQUIRED("Mã xác thực không được để trống!", HttpStatus.BAD_REQUEST),
     JOB_ID_INVALID("công việc không hợp lệ!", HttpStatus.BAD_REQUEST),
-    SORT_BY_INVALID("Tiêu chí sắp xếp không hợp lệ!", HttpStatus.BAD_REQUEST),;
+    SORT_BY_INVALID("Tiêu chí sắp xếp không hợp lệ!", HttpStatus.BAD_REQUEST),
+
+    ADMIN_1("Lỗi lấy dữ liệu summary admin",HttpStatus.BAD_REQUEST)
+    ;
+
 
 
 

@@ -2,7 +2,7 @@ package com.jobplatform.job_recruitment_system.services;
 
 
 import com.jobplatform.job_recruitment_system.dtos.Response.AppliedJobResponse;
-import com.jobplatform.job_recruitment_system.dtos.ApplyRequest;
+import com.jobplatform.job_recruitment_system.dtos.request.ApplyRequest;
 import com.jobplatform.job_recruitment_system.dtos.Response.ApplicationOnlyJobResponse;
 import com.jobplatform.job_recruitment_system.dtos.request.ApplicationRequest;
 import com.jobplatform.job_recruitment_system.exceptions.AppException;

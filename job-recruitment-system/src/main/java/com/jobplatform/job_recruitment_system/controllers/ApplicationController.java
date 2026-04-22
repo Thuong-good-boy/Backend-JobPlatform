@@ -1,6 +1,6 @@
 package com.jobplatform.job_recruitment_system.controllers;
 
-import com.jobplatform.job_recruitment_system.dtos.ApplyRequest;
+import com.jobplatform.job_recruitment_system.dtos.request.ApplyRequest;
 import com.jobplatform.job_recruitment_system.dtos.Response.ApplicationOnlyJobResponse;
 import com.jobplatform.job_recruitment_system.models.*;
 import com.jobplatform.job_recruitment_system.repositories.ApplicationRepository;

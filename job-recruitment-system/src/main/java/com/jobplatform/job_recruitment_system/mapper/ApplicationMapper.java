@@ -2,6 +2,7 @@ package com.jobplatform.job_recruitment_system.mapper;
 
 import com.jobplatform.job_recruitment_system.dtos.Response.ApplicationOnlyJobResponse;
 import com.jobplatform.job_recruitment_system.dtos.Response.AppliedJobResponse;
+import com.jobplatform.job_recruitment_system.dtos.Response.RecentApplicationReponse;
 import com.jobplatform.job_recruitment_system.dtos.request.ApplicationRequest;
 import com.jobplatform.job_recruitment_system.models.Application;
 import org.mapstruct.Mapper;
@@ -21,6 +22,8 @@ public interface ApplicationMapper {
     @Mapping(target = "appliedAt", ignore = true)
     Application formApplicationRequesttoApplication(ApplicationRequest source);
 
-
+    @Mapping(target = "name", source = "fullname")
+    @Mapping(target = "job", source = "job.title")
+    RecentApplicationReponse fromApplicationtoRecentApplicationReponse(Application soure);
 
 }

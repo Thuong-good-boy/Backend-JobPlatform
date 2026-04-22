@@ -1,9 +1,11 @@
 package com.jobplatform.job_recruitment_system.mapper;
 
 import com.jobplatform.job_recruitment_system.dtos.Response.ApplicationOnlyJobResponse;
+import com.jobplatform.job_recruitment_system.dtos.Response.RecentApplicationReponse;
 import com.jobplatform.job_recruitment_system.dtos.request.ApplicationRequest;
 import com.jobplatform.job_recruitment_system.models.Application;
 import com.jobplatform.job_recruitment_system.models.Cv;
+import com.jobplatform.job_recruitment_system.models.Job;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import javax.annotation.processing.Generated;
@@ -11,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-18T16:07:23+0700",
+    date = "2026-04-18T21:57:07+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.6 (Oracle Corporation)"
 )
 @Component
@@ -60,6 +62,25 @@ public class ApplicationMapperImpl implements ApplicationMapper {
         return application;
     }
 
+    @Override
+    public RecentApplicationReponse fromApplicationtoRecentApplicationReponse(Application soure) {
+        if ( soure == null ) {
+            return null;
+        }
+
+        RecentApplicationReponse recentApplicationReponse = new RecentApplicationReponse();
+
+        recentApplicationReponse.setName( soure.getFullname() );
+        recentApplicationReponse.setJob( soureJobTitle( soure ) );
+        recentApplicationReponse.setId( soure.getId() );
+        recentApplicationReponse.setAppliedAt( soure.getAppliedAt() );
+        if ( soure.getStatus() != null ) {
+            recentApplicationReponse.setStatus( soure.getStatus().name() );
+        }
+
+        return recentApplicationReponse;
+    }
+
     private Long applicationCvId(Application application) {
         if ( application == null ) {
             return null;
@@ -88,5 +109,20 @@ public class ApplicationMapperImpl implements ApplicationMapper {
             return null;
         }
         return fileUrl;
+    }
+
+    private String soureJobTitle(Application application) {
+        if ( application == null ) {
+            return null;
+        }
+        Job job = application.getJob();
+        if ( job == null ) {
+            return null;
+        }
+        String title = job.getTitle();
+        if ( title == null ) {
+            return null;
+        }
+        return title;
     }
 }

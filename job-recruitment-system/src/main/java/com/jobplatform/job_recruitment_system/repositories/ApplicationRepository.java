@@ -1,6 +1,9 @@
 package com.jobplatform.job_recruitment_system.repositories;
 
 import com.jobplatform.job_recruitment_system.dtos.Response.ApplicationOnlyJobResponse;
+import com.jobplatform.job_recruitment_system.dtos.Response.ChartDataResponse;
+import com.jobplatform.job_recruitment_system.dtos.Response.ListJobResponse;
+import com.jobplatform.job_recruitment_system.dtos.Response.RecentApplicationReponse;
 import com.jobplatform.job_recruitment_system.models.AppStatus;
 import com.jobplatform.job_recruitment_system.models.Application;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -35,4 +38,67 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
         ORDER BY a.appliedAt DESC
         """)
     List<ApplicationOnlyJobResponse> findListApplicationIncludeMatch(@Param("jobId") Long jobId);
+    @Query("""
+        select count(a.id)
+        from Job j join Application a on j.id = a.job.id
+        join Company c on j.company.id= c.userId
+        where c.userId = :companyId
+""")
+    Long totalApplications(@Param("companyId") Long companyId);
+
+    @Query(value = """
+    with in_7_day as (
+    	select generate_series(
+    		CURRENT_DATE - INTERVAL '6 days',
+    		CURRENT_DATE,
+    		'1 day':: interval
+    	)::date as date_series
+    )
+    	select To_Char(d.date_series,'DD/MM') as date,
+    	count (a.id) as apply,
+    	count(*)  FILTER(where a.status ='INTERVIEW' ) as interview
+    	from in_7_day d LEFT join
+    	(select app.id, app.status,  app.applied_at:: date as appliedAt
+    	from applications app join jobs j on app.job_id = j.id
+    	where j.company_id = :companyId)  a on  d.date_series = a.appliedAt
+    	GROUP by d.date_series
+    	order by d.date_series asc
+""", nativeQuery= true)
+    List<ChartDataResponse> totalApplicationsin7day(@Param("companyId") Long companyId);
+    @Query(value = """
+    SELECT 
+        a.id AS id, 
+        u.full_name AS name, 
+        j.title AS job, 
+        a.applied_at AS appliedAt, 
+        a.status AS status
+    FROM applications a
+    JOIN jobs j ON a.job_id = j.id
+    JOIN users u ON a.user_id = u.id -- Nối thẳng từ applications sang users (Bỏ qua cvs)
+    WHERE j.company_id = :companyId
+    ORDER BY a.applied_at DESC
+    LIMIT 5
+""", nativeQuery = true)
+    List<RecentApplicationReponse> getTop5RecentApplications(@Param("companyId") Long companyId);
+    @Query(value = """
+    select count(a.id)
+    from applications a
+    where a.job_id = :jobId
+    and a.status ='APPLIED'
+""",nativeQuery = true)
+    Long getnewApplications(@Param("jobId") Long jobId);
+    @Query(value = """
+    select count(a.id)
+    from applications a
+    where a.job_id = :jobId
+""",nativeQuery = true)
+    Long gettotalApplications(@Param("jobId") Long jobId);
+    @Query(value = """
+    select count(a.id)
+    from applications a
+""",nativeQuery = true)
+    Long gettotalApplicationsAdmin();
+
+
 }
+

@@ -2,6 +2,7 @@ package com.jobplatform.job_recruitment_system.controllers;
 
 import com.jobplatform.job_recruitment_system.dtos.*;
 import com.jobplatform.job_recruitment_system.dtos.Response.AppliedJobResponse;
+import com.jobplatform.job_recruitment_system.dtos.Response.ListJobResponse;
 import com.jobplatform.job_recruitment_system.dtos.request.ApplicationRequest;
 import com.jobplatform.job_recruitment_system.dtos.request.JobPostRequest;
 import com.jobplatform.job_recruitment_system.models.*;
@@ -67,7 +68,7 @@ public class JobController {
     public ResponseEntity<?> getMyCompanyJobs() {
         try {
             Long userId = userService.getCurrentUserId();
-            List<Job> myJobs = jobService.getJobsByCompanyUserId(userId);
+            List<ListJobResponse> myJobs = jobService.getJobsByCompanyUserId(userId);
             return ResponseEntity.ok(myJobs);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Lỗi khi lấy danh sách việc làm: " + e.getMessage());

@@ -1,5 +1,6 @@
 package com.jobplatform.job_recruitment_system.services;
 
+import com.jobplatform.job_recruitment_system.dtos.Response.ListJobResponse;
 import com.jobplatform.job_recruitment_system.dtos.request.JobPostRequest;
 import com.jobplatform.job_recruitment_system.dtos.JobRecommendationDTO;
 import com.jobplatform.job_recruitment_system.dtos.JobResponse;
@@ -98,7 +99,7 @@ public class JobService {
             Set<Skill> jobSkills = new HashSet<>();
             for (String skillName : request.getSkillNames()) {
                 Skill skill = skillRepository.findBySkillName(skillName)
-                        .orElseGet(() -> skillRepository.save(new Skill(skillName)));
+                        .orElseThrow(() ->  new AppException(ErrorCode.USER_011));
                 jobSkills.add(skill);
             }
             job.setSkills(jobSkills);
@@ -151,8 +152,26 @@ public class JobService {
         }
         return  matchScoreRepository.findRecommendedJobsByJobId(jodId,userCv.getId());
     }
-    public List<Job> getJobsByCompanyUserId(Long userId) {
-        return  jobRepository.findByCompanyIdCustom(userId);
+    public List<ListJobResponse> getJobsByCompanyUserId(Long userId) {
+        List<Job> jobList = jobRepository.findByCompanyIdCustom(userId);
+
+        return jobList.stream().map(job -> {
+            ListJobResponse response = jobMapper.fromJobtoListJobResponse(job);
+
+            Set<String> skillNames = job.getSkills().stream()
+                    .map(skill -> skill.getSkillName())
+                    .collect(Collectors.toSet());
+            response.setSkills(skillNames);
+
+            int totalApps = applicationRepository.gettotalApplications(job.getId()).intValue();
+            int newApps = applicationRepository.getnewApplications(job.getId()).intValue();
+
+            response.setTotalApplications(totalApps);
+            response.setNewApplications(newApps);
+
+            return response;
+
+        }).collect(Collectors.toList());
     }
     @Transactional
     public Job updateJobStatus(Long jobId, JobStatus newStatus, Long userId) {

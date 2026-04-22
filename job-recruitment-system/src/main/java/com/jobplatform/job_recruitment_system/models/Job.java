@@ -44,12 +44,12 @@ public class Job {
     private LocalDateTime createdAt;
 
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id", nullable = false)
     @JsonIgnoreProperties({"user", "hibernateLazyInitializer", "handler"}) // Ẩn user ngược lại để tránh loop
     private Company company;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "job_skills",
             joinColumns = @JoinColumn(name = "job_id"),

@@ -39,4 +39,11 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
             "GROUP BY c.id, c.companyName, c.logoUrl, c.description " +
             "ORDER BY COUNT(j.id) DESC")
     List<TopCompanyResponseDTO> searchCompaniesWithJobCount(@Param("keyword") String keyword);
+
+    @Query(value = """
+    select count(c.user_id)
+    from companies c
+""",nativeQuery = true)
+    Long totalCompany();
+
 }

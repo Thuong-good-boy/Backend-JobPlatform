@@ -51,9 +51,14 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH,"/api/jobs/*/status").hasAuthority("COMPANY")
                         .requestMatchers("/api/jobs/*").hasAuthority("COMPANY")
                         .requestMatchers(HttpMethod.DELETE,"/api/jobs/*").hasAuthority("COMPANY")
-
                         .requestMatchers(HttpMethod.POST,"/api/application/apply").hasAuthority("CANDIDATE")
                         .requestMatchers(HttpMethod.GET, "/api/applications/job/**").hasAuthority("COMPANY")
+                        .requestMatchers("/api/Skill").hasAuthority("COMPANY")
+                        .requestMatchers("/api/company/profile").hasAuthority("COMPANY")
+                        .requestMatchers("/api/jobs/create").hasAuthority("COMPANY")
+                        .requestMatchers(HttpMethod.GET,"/api/admin/Summary").hasAnyAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/Summary/7ngay").hasAnyAuthority("ADMIN", "COMPANY")
+                        .requestMatchers(HttpMethod.GET,"/api/Summary/list_last").hasAnyAuthority("ADMIN","COMPANY")
 
                         .requestMatchers("/ws/**").permitAll()
                         // 4. Các request còn lại phải đăng nhập
