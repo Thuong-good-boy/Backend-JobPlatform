@@ -6,7 +6,9 @@ import com.jobplatform.job_recruitment_system.repositories.ChatMessageRepository
 import com.jobplatform.job_recruitment_system.repositories.ChatRoomRepository;
 import com.jobplatform.job_recruitment_system.services.ChatMessageService;
 import com.jobplatform.job_recruitment_system.services.ChatRoomService;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -28,8 +30,8 @@ public class ChatWebSocketController {
     @Transactional
     public void sendMessage(
             @DestinationVariable
-                    @NotBlank( message = "ROOM_REQUIRED")
-            Long roomId, @Payload @NotBlank(message = "CONTENT_REQUIRED") ChatMessage messagePayload) {
+                    @NotNull( message = "ROOM_REQUIRED")
+            Long roomId, @Payload @Valid ChatMessage messagePayload) {
 
         ChatMessage savedMessage = chatMessageService.save(roomId,messagePayload);
 

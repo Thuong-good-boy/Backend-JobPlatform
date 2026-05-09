@@ -3,6 +3,7 @@ package com.jobplatform.job_recruitment_system.mapper;
 import com.jobplatform.job_recruitment_system.dtos.Response.CompanyDashboardResponse;
 import com.jobplatform.job_recruitment_system.dtos.Response.CompanyProfileResponse;
 import com.jobplatform.job_recruitment_system.dtos.request.CompanyOnboardingRequest;
+import com.jobplatform.job_recruitment_system.dtos.request.CompanyUpdateRequest;
 import com.jobplatform.job_recruitment_system.dtos.request.UpDateProfileCompanyRequest;
 import com.jobplatform.job_recruitment_system.models.Company;
 import com.jobplatform.job_recruitment_system.models.User;
@@ -11,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-18T16:07:23+0700",
+    date = "2026-05-09T08:16:48+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.6 (Oracle Corporation)"
 )
 @Component
@@ -61,6 +62,7 @@ public class CompanyMapperImpl implements CompanyMapper {
         companyProfileResponse.setDescription( company.getDescription() );
         companyProfileResponse.setLogoUrl( company.getLogoUrl() );
         companyProfileResponse.setVerified( company.isVerified() );
+        companyProfileResponse.setRemainingBoosts( company.getRemainingBoosts() );
 
         return companyProfileResponse;
     }
@@ -76,6 +78,20 @@ public class CompanyMapperImpl implements CompanyMapper {
         target.setAddress( company.getAddress() );
 
         return target;
+    }
+
+    @Override
+    public void updateCompany(CompanyUpdateRequest request, Company company) {
+        if ( request == null ) {
+            return;
+        }
+
+        company.setCompanyName( request.getCompanyName() );
+        company.setWebsite( request.getWebsite() );
+        company.setDescription( request.getDescription() );
+        company.setAddress( request.getAddress() );
+        company.setTaxCode( request.getTaxCode() );
+        company.setRemainingBoosts( request.getRemainingBoosts() );
     }
 
     private String companyUserEmail(Company company) {

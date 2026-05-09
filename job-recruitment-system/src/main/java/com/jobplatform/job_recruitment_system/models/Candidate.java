@@ -20,7 +20,7 @@ public class Candidate {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     @JsonIgnore
     private User user;
-
+    @Column(name = "title")
     private String title;
 
     @Column(columnDefinition = "TEXT")

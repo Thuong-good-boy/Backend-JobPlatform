@@ -2,6 +2,7 @@ package com.jobplatform.job_recruitment_system.mapper;
 
 import com.jobplatform.job_recruitment_system.dtos.Response.CandidateProfileResponse;
 import com.jobplatform.job_recruitment_system.dtos.request.CandidateProfileRequest;
+import com.jobplatform.job_recruitment_system.dtos.request.CandidateUpdateRequest;
 import com.jobplatform.job_recruitment_system.models.Candidate;
 import com.jobplatform.job_recruitment_system.models.User;
 import javax.annotation.processing.Generated;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-18T13:44:09+0700",
+    date = "2026-05-09T08:16:48+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.6 (Oracle Corporation)"
 )
 @Component
@@ -81,6 +82,21 @@ public class CandidateMapperImpl implements CandidateMapper {
 
     @Override
     public void upCadidateByDTO(CandidateProfileRequest source, Candidate taget) {
+        if ( source == null ) {
+            return;
+        }
+
+        taget.setTitle( source.getTitle() );
+        taget.setBio( source.getBio() );
+        taget.setExperienceYears( source.getExperienceYears() );
+        taget.setLocation( source.getLocation() );
+        taget.setExpectedSalaryMin( source.getExpectedSalaryMin() );
+        taget.setExpectedSalaryMax( source.getExpectedSalaryMax() );
+        taget.setIsPublic( source.getIsPublic() );
+    }
+
+    @Override
+    public void upDateCandidateAdmin(CandidateUpdateRequest source, Candidate taget) {
         if ( source == null ) {
             return;
         }

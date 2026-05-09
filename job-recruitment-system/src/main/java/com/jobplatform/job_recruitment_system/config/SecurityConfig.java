@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -30,12 +31,9 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // 1. Cho phép các API Public (Auth & Error)
                         .requestMatchers("/api/auth/**", "/error").permitAll()
 
-                        // 2. Cho phép xem danh sách Job (GET)
-                        // Lưu ý: Khai báo cả "/api/jobs" và "/api/jobs/**" để chắc chắn
-                        .requestMatchers(HttpMethod.GET, "/api/jobs", "/api/jobs/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/jobs", "/api/jobs/**").hasAnyAuthority("CANDIDATE","COMPANY","ADMIN")
                         .requestMatchers("/api/admin/ai/sync-legacy-data").permitAll()
                         .requestMatchers(HttpMethod.POST,"/api/jobs/*/apply").hasAuthority("CANDIDATE")
                         .requestMatchers(HttpMethod.POST,"/api/jobs/*/save").hasAuthority("CANDIDATE")
@@ -48,20 +46,32 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET,"/api/company/profile/*").hasAuthority("COMPANY")
                         .requestMatchers(HttpMethod.GET,"/api/company/top-hiring").hasAuthority("CANDIDATE")
                         .requestMatchers(HttpMethod.GET,"/api/company/search").hasAuthority("CANDIDATE")
-                        .requestMatchers(HttpMethod.PATCH,"/api/jobs/*/status").hasAuthority("COMPANY")
-                        .requestMatchers("/api/jobs/*").hasAuthority("COMPANY")
+                        .requestMatchers(HttpMethod.PATCH,"/api/jobs/*/status").hasAnyAuthority("COMPANY","ADMIN")
+                        .requestMatchers("/api/jobs/*").hasAnyAuthority("COMPANY","ADMIN")
                         .requestMatchers(HttpMethod.DELETE,"/api/jobs/*").hasAuthority("COMPANY")
                         .requestMatchers(HttpMethod.POST,"/api/application/apply").hasAuthority("CANDIDATE")
                         .requestMatchers(HttpMethod.GET, "/api/applications/job/**").hasAuthority("COMPANY")
-                        .requestMatchers("/api/Skill").hasAuthority("COMPANY")
+                        .requestMatchers("/api/Skill").hasAnyAuthority("COMPANY","ADMIN")
                         .requestMatchers("/api/company/profile").hasAuthority("COMPANY")
                         .requestMatchers("/api/jobs/create").hasAuthority("COMPANY")
+                        .requestMatchers("/api/package").hasAnyAuthority("ADMIN")
                         .requestMatchers(HttpMethod.GET,"/api/admin/Summary").hasAnyAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.GET,"/api/admin/UserManagement").hasAnyAuthority("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/Summary/7ngay").hasAnyAuthority("ADMIN", "COMPANY")
                         .requestMatchers(HttpMethod.GET,"/api/Summary/list_last").hasAnyAuthority("ADMIN","COMPANY")
-
+                        .requestMatchers(HttpMethod.GET,"/api/package/cadidate").hasAnyAuthority("CANDIDATE")
+                        .requestMatchers(HttpMethod.GET,"/api/package/company").hasAnyAuthority("COMPANY")
+                        .requestMatchers(HttpMethod.POST,"/api/payment/create-vnpay").hasAnyAuthority("CANDIDATE","COMPANY")
+                        .requestMatchers(HttpMethod.GET,"/api/payment/vnpay-return").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/payment/vnpay_ipn").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/candidate/company/job").hasAuthority("CANDIDATE")
+                        .requestMatchers(HttpMethod.GET,"/api/reportreason").hasAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.GET,"/api/company/candidate/search").hasAuthority("COMPANY")
+                        .requestMatchers(HttpMethod.GET,"/api/company/candidate/profile").hasAuthority("COMPANY")
+                        .requestMatchers(HttpMethod.POST,"/api/report").hasAnyAuthority("CANDIDATE","COMPANY")
+                        .requestMatchers(HttpMethod.GET,"/api/report").hasAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.PUT,"/apt/report/*/process").hasAuthority("ADMIN")
                         .requestMatchers("/ws/**").permitAll()
-                        // 4. Các request còn lại phải đăng nhập
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

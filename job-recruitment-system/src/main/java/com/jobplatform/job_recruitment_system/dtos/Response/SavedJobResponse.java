@@ -1,4 +1,4 @@
-package com.jobplatform.job_recruitment_system.dtos;
+package com.jobplatform.job_recruitment_system.dtos.Response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class SavedJobResponseDTO {
+public class SavedJobResponse {
 
     private Long id;            // ID của bản ghi SavedJob (để lát làm nút Bỏ lưu)
     private Long jobId;         // ID của công việc

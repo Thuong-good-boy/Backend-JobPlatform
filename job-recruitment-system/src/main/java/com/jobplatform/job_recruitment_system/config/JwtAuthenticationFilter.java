@@ -1,5 +1,6 @@
 package com.jobplatform.job_recruitment_system.config;
 
+import com.jobplatform.job_recruitment_system.enums.Role;
 import com.jobplatform.job_recruitment_system.services.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -29,30 +30,55 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain
-    ) throws ServletException, IOException {
+            @NonNull FilterChain filterChain ) throws ServletException, IOException {
+        String path = request.getServletPath();
+        if (path.contains("/api/auth/login") ||
+                path.contains("/api/auth/refresh") ||
+                path.contains("/api/auth/register")||
+                path.contains("/api/auth/verify") ||
+                path.contains("/api/auth/forgot-password-verify") ||
+                path.contains("/api/auth/forgot-password") ||
+                path.contains("/api/auth/reset-password") ||
+                path.contains("/api/auth/login-google")||
+                path.contains("/api/auth/resendRegister-otp")||
+                path.contains("/api/payment/vnpay-return") ||
+                path.contains("/api/payment/vnpay_ipn")
 
+        ) {
+
+            filterChain.doFilter(request, response);
+            return;
+        }
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String userEmail;
 
-        // 1. Kiểm tra Header
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+//
+//        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+//            filterChain.doFilter(request, response);
+//            return;
+//        }
 
-        // 2. Thêm TRY-CATCH để xử lý Token lỗi
+
         try {
             jwt = authHeader.substring(7);
-            userEmail = jwtService.extractUsername(jwt); // <-- Dễ nổ lỗi ở đây nếu token hết hạn
+            userEmail = jwtService.extractUsername(jwt);
 
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
                 if (jwtService.isTokenValid(jwt, userDetails.getUsername())) {
+                    String roleString = jwtService.extractRole(jwt);
+                    boolean isPro = jwtService.extractPro(jwt);
+                    Long userId= jwtService.extractId(jwt);
+                    CustomUserDetails customUserDetails = new CustomUserDetails(
+                            userId,
+                            userEmail,
+                            isPro,
+                            Role.valueOf(roleString)
+                    );
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails,
+                            customUserDetails,
                             null,
                             userDetails.getAuthorities()
                     );
@@ -61,10 +87,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            System.out.println("Lỗi xác thực Token: " + e.getMessage());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json; charset=UTF-8");
+            response.getWriter().write("{\"error\": \"Access Token đã hết hạn hoặc không hợp lệ!\"}");
+            return;
         }
 
-        // 3. Cho phép Request đi tiếp
         filterChain.doFilter(request, response);
     }
 }

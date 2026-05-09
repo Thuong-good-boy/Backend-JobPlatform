@@ -5,6 +5,7 @@ import com.jobplatform.job_recruitment_system.dtos.Response.AppliedJobResponse;
 import com.jobplatform.job_recruitment_system.dtos.request.ApplyRequest;
 import com.jobplatform.job_recruitment_system.dtos.Response.ApplicationOnlyJobResponse;
 import com.jobplatform.job_recruitment_system.dtos.request.ApplicationRequest;
+import com.jobplatform.job_recruitment_system.enums.AppStatus;
 import com.jobplatform.job_recruitment_system.exceptions.AppException;
 import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
 import com.jobplatform.job_recruitment_system.mapper.ApplicationMapper;
@@ -34,14 +35,18 @@ public class ApplicationService {
     private  final  UserService userService;
     private  final ApplicationMapper applicationMapper;
     @Transactional
-    public Application applyForJob(ApplicationRequest request) {
-        Job job = jobRepository.getReferenceById(request.getJobId());
+    public Application applyForJob(ApplicationRequest request,Long jobId) {
+        Long  userId= userService.getCurrentUserId();
+        Job job = jobRepository.getReferenceById(jobId);
         Cv cv = cvRepository.findById(request.getCvId())
                 .orElseThrow(() -> new AppException(ErrorCode.CV_002));
 
-        User user = userRepository.findById(request.getUserId())
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.AUTH_008));
-
+        boolean ispro = userService.getCurrentUserIsPro();
+        if(!ispro&& applicationRepository.getCountApply(userId)>=1){
+           throw  new AppException(ErrorCode.NOTPRO_01);
+        }
         Application app =  applicationMapper.formApplicationRequesttoApplication(request);
         app.setUser(user);
         app.setCv(cv);

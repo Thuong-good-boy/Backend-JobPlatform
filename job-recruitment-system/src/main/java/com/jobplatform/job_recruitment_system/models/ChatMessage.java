@@ -14,12 +14,10 @@ public class ChatMessage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Nối với bảng ChatRoom ông đã có
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id", nullable = false)
     private ChatRoom room;
 
-    // ID của người gửi (có thể là ứng viên hoặc ID của user thuộc công ty)
     @Column(name = "sender_id", nullable = false)
     @JsonProperty("senderId")
     private Long senderId;

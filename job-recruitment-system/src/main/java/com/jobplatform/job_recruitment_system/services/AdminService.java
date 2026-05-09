@@ -17,12 +17,14 @@ public class AdminService {
     private final JobRepository jobRepository;
     private  final CandidateRepository candidateRepository;
     private  final  CvRepository cvRepository;
+    private  final  UserSubscriptionRepository userSubscriptionRepository;
     public SummarryAdminReponse getSummary(){
         SummarryAdminReponse reponse = new SummarryAdminReponse();
         reponse.setTotalCandidate(candidateRepository.gettotalCandidate());
         reponse.setTotalApplications(applicationRepository.gettotalApplicationsAdmin());
         reponse.setTotalCompanies(companyRepository.totalCompany());
         reponse.setTotalJobs(jobRepository.totalActiveJobsAdmin());
+        reponse.setTotalRevenue(userSubscriptionRepository.getTotalDoanhThu());
         return  reponse;
     }
     public List<JobsLast3MonthsResponse> getjobsLast3Months(){

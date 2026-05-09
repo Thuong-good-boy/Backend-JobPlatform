@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-20T08:05:32+0700",
+    date = "2026-05-09T08:16:47+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.6 (Oracle Corporation)"
 )
 @Component
@@ -66,6 +66,7 @@ public class JobMapperImpl implements JobMapper {
         }
         listJobResponse.setCreatedAt( job.getCreatedAt() );
         listJobResponse.setSkills( maptoStrings( job.getSkills() ) );
+        listJobResponse.setTrendingUntil( job.getTrendingUntil() );
 
         return listJobResponse;
     }

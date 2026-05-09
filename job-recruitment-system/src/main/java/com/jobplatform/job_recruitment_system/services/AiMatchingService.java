@@ -1,36 +1,61 @@
 package com.jobplatform.job_recruitment_system.services;
 
-import com.jobplatform.job_recruitment_system.dtos.MatchResult;
+import com.jobplatform.job_recruitment_system.dtos.Response.MatchResultReponse;
 import com.jobplatform.job_recruitment_system.models.*;
 import com.jobplatform.job_recruitment_system.repositories.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class AiMatchingService {
-    @Autowired private AiOcrService aiOcrService;
-    @Autowired private MatchScoreRepository matchScoreRepository;
-    @Autowired private JobRepository jobRepository;
-    @Autowired private CvRepository cvRepository;
-
+     private final AiOcrService aiOcrService;
+     private final MatchScoreRepository matchScoreRepository;
+     private final JobRepository jobRepository;
+     private final CvRepository cvRepository;
+    private  final ObjectMapper objectMapper;
 
     @Async
     public void processNewCv(Cv cv) {
-        // Nghỉ 5 giây để "cách ly" với bước đọc CV trước đó
-        try { Thread.sleep(5000); } catch (InterruptedException ignored) {}
-
-        List<Job> allJobs = jobRepository.findAll();
-        for (Job job : allJobs) {
-            calculateAndSave(cv, job);
-            try { Thread.sleep(10000); } catch (InterruptedException ignored) {}
+        try {
+            JsonNode cvDataNode = objectMapper.readTree(cv.getCvData());
+            JsonNode  skillsArray= cvDataNode.get("skills");
+            if(skillsArray == null || !skillsArray.isArray() || skillsArray.isEmpty()){
+                log.warn("CV này không có skill nào để đối chiếu!");
+                return;
+            }
+            List<String> skillList = new ArrayList<>();
+            for(JsonNode skillNode : skillsArray){
+                skillList.add("\""+skillNode.asText()+"\"");
+            }
+            String searchQuery = String.join("OR",skillList);
+            log.info("🔍 Từ khóa đẩy xuống Postgres: " + searchQuery);
+            List<Job> top10Jobs = jobRepository.findTop10MatchingJob(searchQuery);
+            for (Job job : top10Jobs) {
+                try {
+                    calculateAndSave(cv, job);
+                    Thread.sleep(5000);
+                } catch (Exception e) {
+                    log.error("❌ Lỗi AI Matching tại Job {}: {}", job.getId(), e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
     public void calculateAndSave(Cv cv, Job job) {
         try {
-            MatchResult result = aiOcrService.calculateMatchScore(cv.getCvData(), job.getDescription());
+            MatchResultReponse result = aiOcrService.calculateMatchScore(cv.getCvData(), job.getDescription());
 
             if (result == null) return;
 
@@ -59,10 +84,9 @@ public class AiMatchingService {
 
     @Async
     public void processNewJob(Job job) {
-        System.out.println(" Đang tính điểm cho Job mới: " + job.getTitle());
         List<Cv> allCvs = cvRepository.findAll();
         for (Cv cv : allCvs) {
-            calculateAndSave(cv, job); // Tận dụng lại hàm cũ
+            calculateAndSave(cv, job);
         }
     }
 

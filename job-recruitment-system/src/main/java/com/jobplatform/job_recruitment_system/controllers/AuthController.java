@@ -3,9 +3,13 @@ package com.jobplatform.job_recruitment_system.controllers;
 
 import com.jobplatform.job_recruitment_system.dtos.Response.LoginResponse;
 import com.jobplatform.job_recruitment_system.dtos.request.*;
+import com.jobplatform.job_recruitment_system.exceptions.AppException;
+import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
 import com.jobplatform.job_recruitment_system.models.User;
 import com.jobplatform.job_recruitment_system.services.*;
 import com.jobplatform.job_recruitment_system.utils.CookieUtils;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
@@ -20,23 +24,19 @@ import java.util.*;
 @RequiredArgsConstructor
 public class AuthController {
     private final UserService userService;
-    private final JwtService jwtService;
-
-    private final EmailService emailService;
-    private final RedisService redisService;
-    private final PasswordEncoder passwordEncoder;
-    private final RefreshTokenService refreshTokenService;
+    private  final  LoginAttemptService loginAttemptService;
+    private  final CaptchaService captchaService;
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest userRequest) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest userRequest, HttpServletRequest request) {
         try {
-            LoginResponse userResponse = userService.login(userRequest);
+            LoginResponse userResponse = userService.login(userRequest,request);
 
-            ResponseCookie cookie = CookieUtils.createRefreshTokenCookie(userResponse.getRefreshToken());
-
+            ResponseCookie cookie = CookieUtils.createRefreshTokenCookie(userResponse.getRefreshToken(),userRequest.isRemember());
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                    .body(Map.of("accessToken",userResponse.getAccessToken(),
-                                "role",userResponse.getRole()));
+                    .body(Map.of("accessToken",userResponse.getAccessToken()
+
+                            ));
 
         } catch (AuthenticationException e) {
             return ResponseEntity.status(401).body(Map.of("error", "Sai email hoặc mật khẩu!"));
@@ -45,7 +45,9 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@CookieValue(name = "refreshToken", required = false) String refreshToken) {
+
             String accessNewToken= userService.refreshToken(refreshToken);
+
         return ResponseEntity.ok(Map.of(
                 "accessToken", accessNewToken
         ));
@@ -65,19 +67,23 @@ public class AuthController {
     @PostMapping("/verify")
     public ResponseEntity<?> verify(@Valid @RequestBody VerifyOtpRequest request) {
         LoginResponse response = userService.verifyAndLogin(request);
-        ResponseCookie cookie = CookieUtils.createRefreshTokenCookie(response.getRefreshToken());
+        ResponseCookie cookie = CookieUtils.createRefreshTokenCookie(response.getRefreshToken(),false);
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(Map.of(
-                        "accessToken", response.getAccessToken(),
-                        "role", response.getRole(),
-                        "message", "Xác thực thành công và đã đăng nhập!"
+                        "accessToken", response.getAccessToken()
                 ));
     }
     @PostMapping("/resend-otp")
     public ResponseEntity<?> resendOtp(@RequestParam String email) {
             userService.resendOtp(email);
             return ResponseEntity.ok("Mã OTP mới đã được gửi vào email của bạn.");
+
+    }
+    @PostMapping("/resendRegister-otp")
+    public ResponseEntity<?> resendRegisterOtp(@RequestBody Map<String, String>  request) {
+        userService.resendOtpRegister(request.get("email"));
+        return ResponseEntity.ok("Mã OTP mới đã được gửi vào email của bạn.");
 
     }
 
@@ -106,22 +112,30 @@ public class AuthController {
     @PostMapping("/login-google")
     public ResponseEntity<?> googleLogin(@Valid @RequestBody GoogleLoginRequest request) {
         LoginResponse response = userService.loginWithGoogle(request);
-        ResponseCookie cookie = CookieUtils.createRefreshTokenCookie(response.getRefreshToken());
+        ResponseCookie cookie = CookieUtils.createRefreshTokenCookie(response.getRefreshToken(),false);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(Map.of(
                         "accessToken", response.getAccessToken(),
-                        "role", response.getRole()
+                        "isNew", response.isNew()
                 ));
 
     }
 
     @GetMapping("/current")
-    public  ResponseEntity<User> getUserCurrent(){
+    public  ResponseEntity<?> getUserCurrent(){
         Long userId = userService.getCurrentUserId();
-        return userService.getUserId(userId).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+        User user = userService.getUserId(userId).orElseThrow(()-> new AppException(ErrorCode.AUTH_008));
+        return ResponseEntity.ok(Map.of("fullName",user.getFullName(),"role",user.getRole()));
     }
+    @GetMapping("/currentid")
+    public  ResponseEntity<?> getUserCurrentId(){
+        Long userId= userService.getCurrentUserId();
+        return  ResponseEntity.ok(Map.of("userId",userId));
+    }
+
+
 
 
 

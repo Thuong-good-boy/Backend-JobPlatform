@@ -60,9 +60,18 @@ public class CandidateService {
         return  candidateMapper.toDTO(user,candidate);
 
     }
+    public CandidateProfileResponse getCandidateForcompany(Long id){
+
+
+        Candidate candidate = candidateRepository.findById(id).orElseThrow(()-> new AppException(ErrorCode.USER_012));
+        return  candidateMapper.toDTO(candidate.getUser(),candidate);
+    }
     public Candidate getProfile(Long userId) {
         return candidateRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Chưa có profile ứng viên"));
+    }
+    public  User getUserByCandidateID(Long candidateId){
+        return candidateRepository.getUserByCandidate(candidateId);
     }
 
 }

@@ -1,25 +1,28 @@
 package com.jobplatform.job_recruitment_system.services;
 
-import com.jobplatform.job_recruitment_system.dtos.*;
-import com.jobplatform.job_recruitment_system.dtos.Response.CompanyDashboardResponse;
-import com.jobplatform.job_recruitment_system.dtos.Response.CompanyProfileResponse;
+import com.jobplatform.job_recruitment_system.config.CloudinaryConfig;
+import com.jobplatform.job_recruitment_system.dtos.RecentApplicationReponse;
+import com.jobplatform.job_recruitment_system.dtos.Response.*;
 import com.jobplatform.job_recruitment_system.dtos.request.CompanyOnboardingRequest;
 import com.jobplatform.job_recruitment_system.dtos.request.UpDateProfileCompanyRequest;
+import com.jobplatform.job_recruitment_system.enums.JobStatus;
 import com.jobplatform.job_recruitment_system.exceptions.AppException;
 import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
 import com.jobplatform.job_recruitment_system.mapper.CompanyMapper;
 import com.jobplatform.job_recruitment_system.models.*;
-import com.jobplatform.job_recruitment_system.repositories.ApplicationRepository;
-import com.jobplatform.job_recruitment_system.repositories.CompanyRepository;
-import com.jobplatform.job_recruitment_system.repositories.JobRepository;
-import com.jobplatform.job_recruitment_system.repositories.UserRepository;
+import com.jobplatform.job_recruitment_system.repositories.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // Lưu ý import đúng cái này
 import org.springframework.web.multipart.MultipartFile;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,7 +37,8 @@ public class CompanyService {
      private final ApplicationRepository applicationRepository;
      private  final UserService userService;
      private final CompanyMapper companyMapper;
-
+    private  final ObjectMapper objectMapper = new ObjectMapper();
+    private  final CandidateRepository candidateRepository;
     @Transactional
     public void processOnboarding( CompanyOnboardingRequest request) throws Exception {
         Long userId = userService.getCurrentUserId();
@@ -56,15 +60,15 @@ public class CompanyService {
             try {
                 tempLicenseUrl = fileUploadService.uploadFile(request.getLicenseImage());
 
-                OcrResult ocrResult = aiOcrService.extractCompanyInfo(request.getLicenseImage());
+                OcrResultReponse ocrResultReponse = aiOcrService.extractCompanyInfo(request.getLicenseImage());
 
-                if (ocrResult != null && ocrResult.getTaxCode() != null && ocrResult.getCompanyName() != null) {
+                if (ocrResultReponse != null && ocrResultReponse.getTaxCode() != null && ocrResultReponse.getCompanyName() != null) {
 
                     String inputName = normalizeString(request.getCompanyName());
-                    String aiName = normalizeString(ocrResult.getCompanyName());
+                    String aiName = normalizeString(ocrResultReponse.getCompanyName());
 
                     String inputTax = request.getTaxCode().trim();
-                    String aiTax = ocrResult.getTaxCode().trim();
+                    String aiTax = ocrResultReponse.getTaxCode().trim();
 
                     boolean isTaxMatch = inputTax.equals(aiTax);
                     boolean isNameMatch = aiName.contains(inputName) || inputName.contains(aiName);
@@ -116,15 +120,7 @@ public class CompanyService {
 
         return Response;
     }
-    private final List<RecentApplicationDTO> mapToRecentAppDTOList(List<Application> applications) {
-        return applications.stream().map(app -> new RecentApplicationDTO(
-                app.getId(),
-                app.getFullname(),
-                app.getJob().getTitle(),
-                app.getStatus().name(),
-                app.getAppliedAt()
-        )).collect(Collectors.toList());
-    }
+
     @Transactional
     public void updateProfileText(UpDateProfileCompanyRequest data) {
         Long userId = userService.getCurrentUserId();
@@ -147,17 +143,17 @@ public class CompanyService {
         String tempLicenseUrl = null;
         try {
             tempLicenseUrl = fileUploadService.uploadFile(licenseImage);
-            OcrResult ocrResult = aiOcrService.extractCompanyInfo(licenseImage);
+            OcrResultReponse ocrResultReponse = aiOcrService.extractCompanyInfo(licenseImage);
 
-            if (ocrResult == null || ocrResult.getTaxCode() == null || ocrResult.getCompanyName() == null) {
+            if (ocrResultReponse == null || ocrResultReponse.getTaxCode() == null || ocrResultReponse.getCompanyName() == null) {
                 throw new AppException(ErrorCode.COM_003);
             }
 
             String inputName = normalizeString(company.getCompanyName());
-            String aiName = normalizeString(ocrResult.getCompanyName());
+            String aiName = normalizeString(ocrResultReponse.getCompanyName());
 
             String currentTax = company.getTaxCode() != null ? company.getTaxCode().trim() : "";
-            String aiTax = ocrResult.getTaxCode().trim();
+            String aiTax = ocrResultReponse.getTaxCode().trim();
 
             boolean isTaxMatch = currentTax.equals(aiTax);
             boolean isNameMatch = aiName.contains(inputName) || inputName.contains(aiName);
@@ -180,21 +176,53 @@ public class CompanyService {
         Long userId = userService.getCurrentUserId();
         Company company = companyRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.COM_001));
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.AUTH_008));
-
         CompanyProfileResponse profile = companyMapper.toProfileResponse(company);
-
-
         return profile;
     }
-    public List<TopCompanyResponseDTO> getTopCompanies() {
+    public List<TopCompanyResponse> getTopCompanies() {
         return companyRepository.findTopCompaniesByJobCount();
     }
 
-    public List<TopCompanyResponseDTO> searchCompanies(String keyword) {
+    public List<TopCompanyResponse> searchCompanies(String keyword) {
         return companyRepository.searchCompaniesWithJobCount(keyword);
+    }
+    public  void postLogo(MultipartFile logo){
+        Long userId = userService.getCurrentUserId();
+        Company company = companyRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.COM_001));
+        try {
+            String logoUrl = fileUploadService.uploadFile(logo);
+            company.setLogoUrl(logoUrl);
+            companyRepository.save(company);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+
+    }
+    public  Company getCompanyById(Long companyId){
+        return  companyRepository.findByUserId(companyId).orElseThrow(()->new AppException(ErrorCode.COM_001));
+    }
+    public Page<Candidate> searchCandidate(String keyword, String location, Integer minExp,List<String> skills, int page){
+        System.out.println("===== SEARCH PARAMS =====");
+        System.out.println("keyword = " + keyword);
+        System.out.println("location = " + location);
+        System.out.println("minExp = " + minExp);
+        System.out.println("skills = " + skills);
+        System.out.println("page = " + page);
+        System.out.println("=========================");
+        String skillsJsonString = null;
+        if(skills != null && !skills.isEmpty()){
+            ObjectNode rootNode = objectMapper.createObjectNode();
+            ArrayNode skillsArray = rootNode.putArray("skills");
+            skills.forEach(skillsArray:: add);
+            skillsJsonString = rootNode.toString();
+        }
+        Pageable pageable = PageRequest.of(page,10);
+        Page<Candidate> result = candidateRepository.searchCandidates(
+                location, minExp, keyword, skillsJsonString, pageable);
+
+        return  result;
     }
 
 }

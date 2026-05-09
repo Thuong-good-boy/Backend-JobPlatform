@@ -12,4 +12,5 @@ public class SummarryAdminReponse {
    private  Long totalCompanies;
    private  Long totalJobs;
    private  Long totalApplications;
+   private Long totalRevenue;
 }

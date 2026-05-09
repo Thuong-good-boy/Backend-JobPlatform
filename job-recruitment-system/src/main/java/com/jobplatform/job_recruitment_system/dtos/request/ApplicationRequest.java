@@ -13,10 +13,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ApplicationRequest {
-    @NotNull(message = "JOB_ID_REQUIRED")
-    private Long jobId;
-    @NotNull(message = "USER_ID_REQUIRED")
-    private Long userId;
     @NotNull(message = "CV_ID_REQUIRED")
     private Long cvId;
     @NotBlank(message = "FULLNAME_REQUIRED")

@@ -1,4 +1,4 @@
-package com.jobplatform.job_recruitment_system.models;
+package com.jobplatform.job_recruitment_system.enums;
 
 public enum Role {
     CANDIDATE,

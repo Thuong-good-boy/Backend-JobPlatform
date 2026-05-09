@@ -1,16 +1,31 @@
 package com.jobplatform.job_recruitment_system.controllers;
 
 import com.jobplatform.job_recruitment_system.dtos.Response.*;
+import com.jobplatform.job_recruitment_system.dtos.request.CandidateUpdateRequest;
+import com.jobplatform.job_recruitment_system.dtos.request.CompanyUpdateRequest;
+import com.jobplatform.job_recruitment_system.dtos.request.LoginRequest;
+import com.jobplatform.job_recruitment_system.dtos.request.PackageRequest;
+import com.jobplatform.job_recruitment_system.enums.Role;
 import com.jobplatform.job_recruitment_system.exceptions.AppException;
 import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
+import com.jobplatform.job_recruitment_system.models.User;
 import com.jobplatform.job_recruitment_system.services.AdminService;
 import com.jobplatform.job_recruitment_system.services.AiMatchingService;
+import com.jobplatform.job_recruitment_system.services.JobService;
+import com.jobplatform.job_recruitment_system.services.UserService;
+import com.jobplatform.job_recruitment_system.utils.CookieUtils;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import jakarta.validation.groups.Default;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -22,6 +37,8 @@ public class AdminController {
 
     private final AiMatchingService aiMatchingService;
     private final AdminService adminService;
+    private  final UserService userService;
+    private  final JobService jobService;
 
     @PostMapping("/sync-legacy-data")
     public ResponseEntity<?> syncAllOldData() {
@@ -52,5 +69,45 @@ public class AdminController {
 
         }
     }
+    @GetMapping("/UserManagement")
+    public ResponseEntity<?> getAdminUserResponse(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size,
+                                                  @RequestParam(defaultValue = "CANDIDATE")  Role role, @RequestParam(defaultValue = "") String search){
+        Pageable pageable = PageRequest.of(page,size);
+        Page<AdminUserResponse> list = userService.getAdminUserResponse( pageable, role, search);
+        return  ResponseEntity.ok(Map.of("data",list));
+    }
+    @PutMapping("/users/{id}")
+    public  ResponseEntity<?> deleteUser(@PathVariable("id") Long id){
+         userService.getUserId(id).orElseThrow(()-> new AppException(ErrorCode.AUTH_008));
+        Boolean active = userService.isActive(id);
+        if(Boolean.TRUE.equals(active)){
+            userService.blockUser(id);
+            return ResponseEntity.ok( Map.of("message" , "Đã khóa thành công."));
+        }else{
+            userService.unBlockUser(id);
+            return ResponseEntity.ok( Map.of("message" , "Đã mở khóa thành công khóa thành công."));
+        }
+
+    }
+    @PutMapping("/candidates/{id}")
+    public ResponseEntity<?> updateCandidate(@PathVariable Long id, @Valid @RequestBody CandidateUpdateRequest request) {
+        userService.updateCandidate(id, request);
+        return ResponseEntity.ok(Map.of("message", "Cập nhật ứng viên thành công!"));
+    }
+
+    @PutMapping("/companies/{id}")
+    public ResponseEntity<?> updateCompany(@PathVariable Long id, @Valid @RequestBody CompanyUpdateRequest request) {
+        userService.updateCompany(id, request);
+        return ResponseEntity.ok(Map.of("message", "Cập nhật doanh nghiệp thành công!"));
+    }
+        @GetMapping("/jobManagement")
+    public ResponseEntity<?> getAllJobs(
+            @RequestParam(defaultValue = "0")int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok( jobService.getJobsForAdmin(page,size));
+    }
+
+
 
 }

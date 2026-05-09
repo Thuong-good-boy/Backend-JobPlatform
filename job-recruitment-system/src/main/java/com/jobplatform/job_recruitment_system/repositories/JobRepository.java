@@ -1,12 +1,19 @@
 package com.jobplatform.job_recruitment_system.repositories;
 
+import com.jobplatform.job_recruitment_system.dtos.Response.CompanyJobsByCandidateResponse;
 import com.jobplatform.job_recruitment_system.dtos.Response.JobsLast3MonthsResponse;
 import com.jobplatform.job_recruitment_system.models.Job;
-import com.jobplatform.job_recruitment_system.models.JobStatus;
+import com.jobplatform.job_recruitment_system.enums.JobStatus;
+import lombok.NonNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,18 +22,36 @@ import java.util.Optional;
 public interface JobRepository extends JpaRepository<Job, Long> {
 
 
-    List<Job> findAll();
+    @Query("""
+    Select j
+    from Job j 
+    where j.status= com.jobplatform.job_recruitment_system.enums.JobStatus.OPEN
+    order by case when j.trendingUntil > CURRENT_TIMESTAMP  THEN 1 ELSE 0 END DESC
+""")
+    Page<Job> findAllJobsOpen(Pageable pageable);
+    Page<Job> findAll( Pageable pageable);
 
     @Query(value = """
-        SELECT * FROM jobs 
-        WHERE :keyword IS NULL 
-           OR TRIM(:keyword) = '' 
-           OR search_vector @@ plainto_tsquery('simple', :keyword)
-        ORDER BY created_at DESC
-        Limit 10
-        """, nativeQuery = true)
-    List<Job> searchJobs(@Param("keyword") String keyword);
-    // Dùng ?1 nghĩa là lấy cái tham số đầu tiên (Long companyId) ném vào đây
+    SELECT * FROM jobs 
+    WHERE :keyword IS NULL 
+       OR TRIM(:keyword) = '' 
+       OR search_vector @@ plainto_tsquery('simple', :keyword)
+    ORDER BY 
+       (CASE 
+           WHEN :keyword IS NULL OR TRIM(:keyword) = '' THEN 0 
+           ELSE ts_rank(search_vector, plainto_tsquery('simple', :keyword)) 
+       END) DESC,
+       created_at DESC
+    """,countQuery = """
+            select count(*) from jobs
+            where :keyword is null
+            or trim(keyword) =''
+            or search_vector @@ plainto_tsquery('simple',:keyword)
+     
+            """,
+            nativeQuery = true)
+    Page<Job> searchJobs(@Param("keyword") String keyword, Pageable pageable);
+
     @Query("SELECT j FROM Job j WHERE j.company.id = ?1 ORDER BY j.createdAt DESC")
     List<Job> findByCompanyIdCustom(Long companyId);
 
@@ -68,4 +93,46 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 """, nativeQuery = true)
     List<JobsLast3MonthsResponse> getJobsLast3MonthsReponse();
 
+    @Query(value = """
+    SELECT 
+        j.id, 
+        j.title, 
+        j.location, 
+        CAST(j.salary_min AS INTEGER) AS salaryMin, 
+        CAST(j.salary_max AS INTEGER) AS salaryMax, 
+        j.status, 
+        j.created_at AS createdAt,
+        
+        (SELECT ARRAY_AGG(s.skill_name) FROM job_skills js JOIN skills s ON js.skill_id = s.id WHERE js.job_id = j.id) AS skills,
+        
+        (SELECT CAST(COUNT(*) AS INTEGER) FROM applications a WHERE a.job_id = j.id) AS totalApplications,
+        
+        (SELECT CAST(COUNT(*) AS INTEGER) FROM applications a WHERE a.job_id = j.id AND a.status = 'NEW') AS newApplications,
+
+        ms.score AS matchScore,
+        ms.match_details AS matchDetails
+        
+    FROM jobs j 
+    LEFT JOIN match_scores ms ON j.id = ms.job_id AND ms.cv_id = CAST(:cvId AS BIGINT) 
+    WHERE j.company_id = :companyId
+    """, nativeQuery = true)
+    List<CompanyJobsByCandidateResponse> findCompanyJobs(@Param("companyId") Long companyId, @Param("cvId") Long cvId);
+    @Query(value = """
+    Select * from jobs j 
+    where j.search_vector @@ websearch_to_tsquery('simple', :skillsQuery)
+      ORDER BY ts_rank(j.search_vector, websearch_to_tsquery('simple', :skillsQuery)) DESC
+      LIMIT 10
+""", nativeQuery = true)
+    List<Job> findTop10MatchingJob(@Param("skillsQuery") String skillsQuery);
+    @Query(value = """
+    SELECT COUNT(j.id) < 2
+    FROM jobs j
+    WHERE j.company_id = :companyId;
+""", nativeQuery = true)
+    boolean followNotPro(@Param("companyId") Long companyId);
+
+    @Transactional
+    @Modifying
+    @Query("UPDATE Job j SET j.isTrending = false WHERE j.isTrending = true AND j.trendingUntil < CURRENT_TIMESTAMP")
+    int resetExpiredTrendingJobs();
 }

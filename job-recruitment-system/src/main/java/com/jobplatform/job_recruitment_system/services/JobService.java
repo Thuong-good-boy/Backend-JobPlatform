@@ -1,21 +1,29 @@
 package com.jobplatform.job_recruitment_system.services;
 
+import com.jobplatform.job_recruitment_system.dtos.Response.CompanyJobsByCandidateResponse;
 import com.jobplatform.job_recruitment_system.dtos.Response.ListJobResponse;
 import com.jobplatform.job_recruitment_system.dtos.request.JobPostRequest;
-import com.jobplatform.job_recruitment_system.dtos.JobRecommendationDTO;
-import com.jobplatform.job_recruitment_system.dtos.JobResponse;
+import com.jobplatform.job_recruitment_system.dtos.Response.JobRecommendationResponse;
+import com.jobplatform.job_recruitment_system.dtos.Response.JobResponse;
+import com.jobplatform.job_recruitment_system.enums.JobStatus;
+import com.jobplatform.job_recruitment_system.enums.Role;
 import com.jobplatform.job_recruitment_system.exceptions.AppException;
 import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
 import com.jobplatform.job_recruitment_system.mapper.JobMapper;
 import com.jobplatform.job_recruitment_system.models.*;
 import com.jobplatform.job_recruitment_system.repositories.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.StringNode;
 
+
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -35,19 +43,22 @@ public class JobService {
     private final ApplicationRepository applicationRepository;
     private final SavedJobRepository savedJobRepository;
     private final JobMapper jobMapper;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private  final  UserSubscriptionRepository userSubscriptionRepository;
+    public Page<Job> getJobsForUser(int page, int size) {
+        Pageable pageable = PageRequest.of(page,size);
+            return jobRepository.findAllJobsOpen(pageable);
+    }
+    public Page<Job> getJobsForAdmin(int page, int size) {
+        Pageable pageable = PageRequest.of(page,size);
+        return jobRepository.findAll(pageable);
+    }
+    public Page<JobRecommendationResponse> getJobRecommendationResponses(int page, int size){
 
-    public Object getJobsForUser(Long userId) {
-        if (userId == null) {
-            return jobRepository.findAll();
-        }
-
-        Cv userCv = cvService.getFirstCv (userId).orElse(null);
-        if (userCv == null) {
-            return jobRepository.findAll();
-        }
-
-        return matchScoreRepository.findRecommendedJobsByCvId(userCv.getId());
+        Pageable pageable = PageRequest.of(page,size);
+        Long userId = userService.getCurrentUserId();
+        Cv cv = cvService.getFirstCv(userId).orElseThrow(()->new AppException(ErrorCode.CV_004));
+       Page<JobRecommendationResponse>  jobRecommendationResponses= matchScoreRepository.findRecommendedJobsByCvId(cv.getId(),pageable);
+        return  jobRecommendationResponses;
     }
 
 
@@ -56,8 +67,7 @@ public class JobService {
                 .id(job.getId())
                 .title(job.getTitle())
                 .companyName(job.getCompany().getCompanyName())
-                .logoUrl(job.getCompany().getLogoUrl()) // Giả sử bảng Company có field logo
-                // Lưu ý: Tên field trong postJob là salaryMin/Max, hãy dùng đúng getter đó
+                .logoUrl(job.getCompany().getLogoUrl())
                 .salaryRange(String.format("$%,d - $%,d", job.getSalaryMin(), job.getSalaryMax()))
                 .skills(job.getSkills().stream().map(Skill::getSkillName).toList())
                 .matchScore(score)
@@ -80,9 +90,19 @@ public class JobService {
 
 
     @Transactional
-    public Job postJob(JobPostRequest request) {
+    public void postJob(JobPostRequest request) {
         Long userId = userService.getCurrentUserId();
         User user = userService.getUserId(userId).orElseThrow(() -> new AppException(ErrorCode.AUTH_008));
+        boolean isPro = userSubscriptionRepository.userispro(userId);
+        System.out.println("isPro: " + isPro);
+        if(!isPro){
+
+            boolean follow = jobRepository.followNotPro(userId);
+            System.out.println("follow: " + follow);
+            if (!follow ){
+                throw  new AppException(ErrorCode.NOTPRO_02);
+            }
+        }
 
         Company companyProfile = companyRepository.findByUser(user)
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_003));
@@ -93,7 +113,7 @@ public class JobService {
 
         Job job = jobMapper.fromJobPostRequest(request);
         job.setCompany(companyProfile);
-        job.setStatus(JobStatus.OPEN);
+        job.setStatus(JobStatus.PENDING);
 
         if (request.getSkillNames() != null && !request.getSkillNames().isEmpty()) {
             Set<Skill> jobSkills = new HashSet<>();
@@ -104,39 +124,14 @@ public class JobService {
             }
             job.setSkills(jobSkills);
         }
-        return jobRepository.save(job);
+        Job jobnew= jobRepository.save(job);
     }
 
-    public List<JobRecommendationDTO> searchJobs(String keyword, Long userId) {
-        Cv userCv = (userId == null) ? null :  cvService.getFirstCv (userId).orElse(null);
+    public Page<Job> searchJobs(String keyword,int page, int size) {
+        Pageable pageable = PageRequest.of(page,size);
+        String cleanKey =  (keyword!=null) ? keyword.trim():"";
+        return jobRepository.searchJobs(cleanKey,pageable);
 
-        if (userCv == null) {
-            List<Job> jobs = jobRepository.searchJobs(keyword);
-            return jobs.stream()
-                    .map(job -> new JobRecommendationDTO(job, 0.0, ""))
-                    .collect(Collectors.toList());
-        }
-
-        List<MatchScore> scores = matchScoreRepository.findRecommendedEntitiesByKeyword(userCv.getId(), keyword);
-
-        return scores.stream().map(ms -> {
-            String reason = "";
-            try {
-                // Chú ý: ms.getMatch_details() phải khớp với tên trong Entity của bạn
-                if (ms.getMatch_details() != null) {
-                    JsonNode node = objectMapper.readTree(ms.getMatch_details());
-                    reason = node.has("reason") ? node.get("reason").asText() : "";
-                }
-            } catch (Exception e) {
-                reason = "Phù hợp với mục tiêu nghề nghiệp của bạn";
-            }
-
-            return new JobRecommendationDTO(
-                    ms.getJob(),
-                    ms.getScore(),
-                    reason
-            );
-        }).collect(Collectors.toList());
     }
     public  Job getReferenceById(Long jobid){
         return jobRepository.getReferenceById(jobid);
@@ -177,8 +172,8 @@ public class JobService {
     public Job updateJobStatus(Long jobId, JobStatus newStatus, Long userId) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_001));
-
-        if (!job.getCompany().getUser().getId().equals(userId)) {
+        User user = userService.getUserId(userService.getCurrentUserId()).orElseThrow(()-> new AppException(ErrorCode.AUTH_008));
+        if ( Role.ADMIN.equals(user.getRole())) {
             throw new AppException(ErrorCode.JOB_005);
         }
         job.setStatus(newStatus);
@@ -189,8 +184,8 @@ public class JobService {
     public Job updateJob(Long jobId, JobPostRequest request, Long userId) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_001));
-
-        if (!job.getCompany().getUser().getId().equals(userId)) {
+        User user = userService.getUserId(userService.getCurrentUserId()).orElseThrow(()->new AppException(ErrorCode.AUTH_008));
+        if (!job.getCompany().getUser().getId().equals(userId) && !Role.ADMIN.equals(user.getRole())) {
             throw new AppException(ErrorCode.JOB_004);
         }
         jobMapper.updateJob(request, job);
@@ -225,12 +220,46 @@ public class JobService {
 
         jobRepository.delete(job);
     }
+    public List<CompanyJobsByCandidateResponse> getalljobforcompany( Long companyId){
+        Long userId= userService.getCurrentUserId();
+        if(userId==null){ throw  new AppException(ErrorCode.AUTH_008);}
+        Cv cv = cvService.getFirstCv(userId).orElse(null);
+        if (cv== null){
+            return jobRepository.findCompanyJobs(companyId,null);
+        }else{
+            return jobRepository.findCompanyJobs(companyId,cv.getId());
+        }
 
-    public List<JobRecommendationDTO> findRecommendedJobsByCvIdAndCompanyId(Long userId, Long companyId) {
-        Cv cv = cvService.getFirstCv(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.CV_004));
-
-        return matchScoreRepository.findRecommendedJobsByCvIdAndCompanyId(cv.getId(), companyId);
     }
+    @Transactional
+    public  void  postJob(Long jobId){
+            Long userId= userService.getCurrentUserId();
+            User user = userService.getUserId(userId).orElse(null);
+            if(user==null){
+                throw  new AppException(ErrorCode.AUTH_008);
+            }
+            Company company = companyRepository.findByUser(user).orElse(null);
+            if(company==null){
+                throw  new AppException(ErrorCode.COM_001);
+            }
+            int remainingBoosts = company.getRemainingBoosts();
+            if(remainingBoosts<= 0){
+                throw  new AppException(ErrorCode.NOTPRO_03);
+            }
+            company.setRemainingBoosts(remainingBoosts - 1);
+            companyRepository.save(company);
+            Job job = jobRepository.findById(jobId).orElseThrow(()-> new AppException(ErrorCode.JOB_001));
+            LocalDateTime now= LocalDateTime.now();
+            LocalDateTime  trendingUntil= job.getTrendingUntil();
+            if(Boolean.TRUE.equals(job.getIsTrending()) && trendingUntil!= null && trendingUntil.isAfter(now)){
+                job.setTrendingUntil(trendingUntil.plusHours(24));
+            }else {
+                job.setIsTrending(true);
+                job.setTrendingUntil(now.plusHours(24));
+            }
+            jobRepository.save(job);
+
+    }
+
 
 }

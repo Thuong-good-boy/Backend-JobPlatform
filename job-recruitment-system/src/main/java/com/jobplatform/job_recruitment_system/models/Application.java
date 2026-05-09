@@ -1,6 +1,7 @@
 package com.jobplatform.job_recruitment_system.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties; // Nhớ import
+import com.jobplatform.job_recruitment_system.enums.AppStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

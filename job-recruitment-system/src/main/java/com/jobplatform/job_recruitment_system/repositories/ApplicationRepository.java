@@ -2,9 +2,8 @@ package com.jobplatform.job_recruitment_system.repositories;
 
 import com.jobplatform.job_recruitment_system.dtos.Response.ApplicationOnlyJobResponse;
 import com.jobplatform.job_recruitment_system.dtos.Response.ChartDataResponse;
-import com.jobplatform.job_recruitment_system.dtos.Response.ListJobResponse;
 import com.jobplatform.job_recruitment_system.dtos.Response.RecentApplicationReponse;
-import com.jobplatform.job_recruitment_system.models.AppStatus;
+import com.jobplatform.job_recruitment_system.enums.AppStatus;
 import com.jobplatform.job_recruitment_system.models.Application;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -74,7 +73,7 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
         a.status AS status
     FROM applications a
     JOIN jobs j ON a.job_id = j.id
-    JOIN users u ON a.user_id = u.id -- Nối thẳng từ applications sang users (Bỏ qua cvs)
+    JOIN users u ON a.user_id = u.id 
     WHERE j.company_id = :companyId
     ORDER BY a.applied_at DESC
     LIMIT 5
@@ -98,7 +97,10 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
     from applications a
 """,nativeQuery = true)
     Long gettotalApplicationsAdmin();
-
+    @Query(value = """
+    select count(a.id) from applications a where a.user_id = :userId
+""",nativeQuery = true)
+    Integer getCountApply(@Param("userId") Long userId);
 
 }
 

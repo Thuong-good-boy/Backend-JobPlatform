@@ -3,6 +3,7 @@ package com.jobplatform.job_recruitment_system.mapper;
 import com.jobplatform.job_recruitment_system.dtos.Response.CompanyDashboardResponse;
 import com.jobplatform.job_recruitment_system.dtos.Response.CompanyProfileResponse;
 import com.jobplatform.job_recruitment_system.dtos.request.CompanyOnboardingRequest;
+import com.jobplatform.job_recruitment_system.dtos.request.CompanyUpdateRequest;
 import com.jobplatform.job_recruitment_system.dtos.request.UpDateProfileCompanyRequest;
 import com.jobplatform.job_recruitment_system.models.Company;
 import com.jobplatform.job_recruitment_system.models.User;
@@ -25,5 +26,5 @@ public interface CompanyMapper {
     CompanyProfileResponse toProfileResponse(Company company);
 
     Company updateCompanyByProfileRequest(UpDateProfileCompanyRequest company, @MappingTarget Company target);
-
+    void updateCompany(CompanyUpdateRequest request, @MappingTarget Company company);
 }

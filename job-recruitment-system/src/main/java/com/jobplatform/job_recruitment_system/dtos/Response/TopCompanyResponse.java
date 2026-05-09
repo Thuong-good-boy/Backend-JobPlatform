@@ -1,4 +1,4 @@
-package com.jobplatform.job_recruitment_system.dtos;
+package com.jobplatform.job_recruitment_system.dtos.Response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class TopCompanyResponseDTO {
+public class TopCompanyResponse {
 
     private Long id;
 

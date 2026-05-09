@@ -40,9 +40,9 @@ public class CvService {
         cv.setActive(true);
 
         Cv savedCv = cvRepository.save(cv);
-
-        aiMatchingService.processNewCv(savedCv);
-
+        if(userService.getCurrentUserIsPro()) {
+            aiMatchingService.processNewCv(savedCv);
+        }
         return savedCv;
     }
 

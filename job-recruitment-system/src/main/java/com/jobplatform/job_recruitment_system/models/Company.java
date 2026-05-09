@@ -23,7 +23,7 @@ public class Company {
 
     @Column(name = "company_name", nullable = false)
     private String companyName;
-
+    @Column(name = "website")
     private String website;
 
     @Column(columnDefinition = "TEXT")
@@ -43,4 +43,6 @@ public class Company {
 
     @Column(name = "url_logo")
     private String logoUrl;
+    @Column(name = "remaining_boosts")
+    private  Integer remainingBoosts;
 }

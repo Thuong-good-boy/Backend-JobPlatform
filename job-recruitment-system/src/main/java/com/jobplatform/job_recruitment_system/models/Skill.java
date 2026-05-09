@@ -12,10 +12,8 @@ public class Skill {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     @Column(name = "skill_name", unique = true, nullable = false)
     private String skillName;
-
     public Skill(String skillName) {
         this.skillName = skillName;
     }

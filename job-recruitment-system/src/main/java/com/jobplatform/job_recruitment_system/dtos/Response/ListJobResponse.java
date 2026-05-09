@@ -19,9 +19,8 @@ public class ListJobResponse {
     private Integer salaryMax;
     private String status;
     private LocalDateTime createdAt;
-
     private Set<String> skills;
-
     private Integer totalApplications;
     private Integer newApplications;
+    private LocalDateTime trendingUntil;
 }

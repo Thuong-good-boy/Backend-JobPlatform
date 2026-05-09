@@ -1,6 +1,7 @@
 package com.jobplatform.job_recruitment_system.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.jobplatform.job_recruitment_system.enums.JobStatus;
 import jakarta.persistence.*;
 import lombok.*; // Dùng Getter, Setter thay vì Data để an toàn hơn với JPA
 import org.hibernate.annotations.CreationTimestamp;
@@ -28,21 +29,23 @@ public class Job {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String description;
 
-    @Column(name = "url_logo")
-    private  String url_logo;
-
     private BigDecimal salaryMin;
     private BigDecimal salaryMax;
 
     private String location;
 
     @Enumerated(EnumType.STRING)
-    private JobStatus status = JobStatus.OPEN;
+    private JobStatus status = JobStatus.PENDING;
 
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "is_trending")
+    private Boolean isTrending;
+
+    @Column(name = "trending_until")
+    private LocalDateTime trendingUntil;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id", nullable = false)

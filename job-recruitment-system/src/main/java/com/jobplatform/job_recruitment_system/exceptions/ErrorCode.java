@@ -12,7 +12,8 @@ public enum ErrorCode {
     AUTH_006("Tài khoản của bạn không có quyền đăng nhập vào vai trò này!", HttpStatus.FORBIDDEN),
     AUTH_007("Phiên đổi mật khẩu không hợp lệ hoặc đã hết hạn!", HttpStatus.FORBIDDEN),
     AUTH_008("Tài khoản không tồn tại!", HttpStatus.FORBIDDEN),
-
+    AUTH_009("Nhập sai quá nhiều lần!",HttpStatus.TOO_MANY_REQUESTS),
+    AUTH_010("Mã CAPTCHA không hợp lệ hoặc đã hết hạn!",HttpStatus.UNAUTHORIZED),
     // 2. User & Account Errors
     USER_001("Email đã tồn tại trong hệ thống!", HttpStatus.BAD_REQUEST),
     USER_002("Tài khoản này đã tồn tại và được kích hoạt!", HttpStatus.BAD_REQUEST),
@@ -59,6 +60,7 @@ public enum ErrorCode {
     APP_001("Không tìm thấy đơn ứng tuyển!", HttpStatus.NOT_FOUND),
     APP_002("Không tìm thấy hồ sơ ứng tuyển này", HttpStatus.NOT_FOUND),
 
+    PAYMENT_001("Không tìm thấy hóa đơn!",HttpStatus.NOT_FOUND),
     // 7. Chat Errors
     CHAT_001("Không tìm thấy phòng chat!", HttpStatus.NOT_FOUND),
 
@@ -80,7 +82,18 @@ public enum ErrorCode {
     JOB_ID_INVALID("công việc không hợp lệ!", HttpStatus.BAD_REQUEST),
     SORT_BY_INVALID("Tiêu chí sắp xếp không hợp lệ!", HttpStatus.BAD_REQUEST),
 
-    ADMIN_1("Lỗi lấy dữ liệu summary admin",HttpStatus.BAD_REQUEST)
+    ADMIN_1("Lỗi lấy dữ liệu summary admin",HttpStatus.BAD_REQUEST),
+
+    NOTPRO_01("Bạn cần nâng cấp tài khoản để ứng tuyển nhiều công việc hơn.",HttpStatus.TOO_MANY_REQUESTS),
+    NOTPRO_02("Bạn cần nâng cấp tài khoản để đăng tin job nhiều hơn.",HttpStatus.TOO_MANY_REQUESTS),
+    NOTPRO_03("Bạn đã hết lượt đẩy job.",HttpStatus.TOO_MANY_REQUESTS),
+
+    SKILL_01("Không tìm thấy skill. ",HttpStatus.NOT_FOUND),
+
+    PACKAGE_01("Không tìm thầy package",HttpStatus.NOT_FOUND),
+
+    REPORTREASON_01("Không tìm thấy ReportReason này!",HttpStatus.NOT_FOUND),
+    REPORT_01("Không tìm thấy report này!",HttpStatus.NOT_FOUND)
     ;
 
 

@@ -1,5 +1,6 @@
 package com.jobplatform.job_recruitment_system.services;
 
+import com.jobplatform.job_recruitment_system.enums.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -22,20 +23,18 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
-    @Value("${jwt.refresh-expiration}")
-    private long refreshExpiration;
 
-    // 1. Tạo Access Token (Hạn ngắn)
-    public String generateAccessToken(String email) {
-        return createToken(new HashMap<>(), email, jwtExpiration);
+
+    public String generateAccessToken(Long userId,String email, boolean ispro, Role role) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("id",userId);
+        claims.put("role", role);
+        claims.put("pro", ispro);
+
+        return createToken(claims, email, jwtExpiration);
     }
 
-    // 2. Tạo Refresh Token (Hạn dài)
-    public String generateRefreshToken(String email) {
-        return createToken(new HashMap<>(), email, refreshExpiration);
-    }
 
-    // Hàm dùng chung để tạo Token
     private String createToken(Map<String, Object> claims, String subject, long expiration) {
         return Jwts.builder()
                 .setClaims(claims)
@@ -46,12 +45,19 @@ public class JwtService {
                 .compact();
     }
 
-    // --- Các hàm hỗ trợ giải mã và kiểm tra giữ nguyên ---
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
-
+    public String extractRole(String token){
+        return extractClaim(token,claims -> claims.get("role",String.class));
+    }
+    public  boolean extractPro(String token){
+        return  extractClaim(token, claims -> claims.get("pro",Boolean.class));
+    }
+    public  Long extractId(String token){
+        return  extractClaim(token,claims -> claims.get("id",Long.class));
+    }
     public boolean isTokenValid(String token, String username) {
         final String extractedUsername = extractUsername(token);
         return (extractedUsername.equals(username) && !isTokenExpired(token));
@@ -71,10 +77,12 @@ public class JwtService {
     }
 
     private boolean isTokenExpired(String token) {
+
         return extractExpiration(token).before(new Date());
     }
 
     private Date extractExpiration(String token) {
+
         return extractClaim(token, Claims::getExpiration);
     }
 

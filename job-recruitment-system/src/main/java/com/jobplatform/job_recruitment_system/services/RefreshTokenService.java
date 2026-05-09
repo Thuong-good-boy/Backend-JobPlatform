@@ -16,7 +16,6 @@ import java.util.UUID;
 @Service
 public class RefreshTokenService {
 
-    // Lấy thời gian hết hạn từ file application.properties (ví dụ: 604800000 cho 7 ngày)
     @Value("${jwt.refresh-expiration}")
     private Long refreshTokenDurationMs;
 
@@ -32,19 +31,10 @@ public class RefreshTokenService {
     public RefreshToken createRefreshToken(String email) {
         RefreshToken refreshToken = new RefreshToken();
 
-        // 1. Tìm user
-        refreshToken.setUser(userRepository.findByEmail(email)
+        refreshToken.setUser(userRepository.findByEmailAndActiveTrue(email)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy User")));
-
-        // 2. Tạo chuỗi Token
-        // Chú ý: Với Refresh Token lưu DB, dùng UUID (chuỗi ngẫu nhiên) là an toàn và tối ưu nhất
-        // thay vì mã hóa cả một cục JWT dài dòng.
         refreshToken.setToken(UUID.randomUUID().toString());
-
-        // 3. Set thời gian hết hạn (Tính từ thời điểm hiện tại + số mili giây cấu hình)
         refreshToken.setExpiryDate(Instant.now().plusMillis(refreshTokenDurationMs));
-
-        // 4. Lưu vào SQL
         return refreshTokenRepository.save(refreshToken);
     }
 

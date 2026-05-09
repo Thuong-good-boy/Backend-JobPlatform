@@ -1,5 +1,6 @@
 package com.jobplatform.job_recruitment_system.dtos.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -31,4 +32,7 @@ public class LoginRequest {
             message = "INVALID_ROLE"
     )
     private String role;
+    @JsonProperty("captchaToken")
+    private  String captchaToken;
+    private  boolean remember;
 }

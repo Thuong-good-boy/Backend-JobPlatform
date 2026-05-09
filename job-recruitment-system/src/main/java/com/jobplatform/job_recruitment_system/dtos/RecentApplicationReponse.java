@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class RecentApplicationDTO {
+public class RecentApplicationReponse {
     private Long id;
     private String fullname;
     private String jobTitle;

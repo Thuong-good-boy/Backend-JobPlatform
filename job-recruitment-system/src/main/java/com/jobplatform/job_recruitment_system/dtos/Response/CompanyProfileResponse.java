@@ -16,4 +16,5 @@ public class CompanyProfileResponse{
     private String logoUrl;
     private boolean isVerified;
     private String email;
+    private Integer remainingBoosts;
 }

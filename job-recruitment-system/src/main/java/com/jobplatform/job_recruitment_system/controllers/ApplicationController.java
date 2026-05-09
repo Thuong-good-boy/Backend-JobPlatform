@@ -2,13 +2,14 @@ package com.jobplatform.job_recruitment_system.controllers;
 
 import com.jobplatform.job_recruitment_system.dtos.request.ApplyRequest;
 import com.jobplatform.job_recruitment_system.dtos.Response.ApplicationOnlyJobResponse;
-import com.jobplatform.job_recruitment_system.models.*;
+import com.jobplatform.job_recruitment_system.enums.AppStatus;
 import com.jobplatform.job_recruitment_system.repositories.ApplicationRepository;
 import com.jobplatform.job_recruitment_system.repositories.CvRepository;
 import com.jobplatform.job_recruitment_system.repositories.JobRepository;
 import com.jobplatform.job_recruitment_system.services.ApplicationService;
 import com.jobplatform.job_recruitment_system.services.UserService;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -51,7 +52,7 @@ public class ApplicationController {
             Long applicationId,
 
             @RequestParam("newStatus")
-            @Pattern(regexp = "^APPLIED|VIEWED|INTERVIEW|REJECTED|ACCEPTED$" , message = "STATU_INALID")
+            @NotNull( message = "STATUT_INALID")
             AppStatus newStatus) {
         try {
             applicationService.updateApplicationStatus(applicationId, newStatus);

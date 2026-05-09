@@ -1,6 +1,6 @@
 package com.jobplatform.job_recruitment_system.services;
 
-import com.jobplatform.job_recruitment_system.dtos.SavedJobResponseDTO;
+import com.jobplatform.job_recruitment_system.dtos.Response.SavedJobResponse;
 import com.jobplatform.job_recruitment_system.exceptions.AppException;
 import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
 import com.jobplatform.job_recruitment_system.models.Company;
@@ -9,13 +9,10 @@ import com.jobplatform.job_recruitment_system.models.SavedJob;
 import com.jobplatform.job_recruitment_system.models.User;
 import com.jobplatform.job_recruitment_system.repositories.SavedJobRepository;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -46,14 +43,14 @@ public class SaveJobService {
         savedJobRepository.deleteByJobIdAndUserId(jobId,userId);
         return;
     }
-    public List<SavedJobResponseDTO> getSavedJobsByUser(Long userId) {
+    public List<SavedJobResponse> getSavedJobsByUser(Long userId) {
         List<SavedJob> savedJobs = savedJobRepository.findByUserIdOrderByCreatedAtDesc(userId);
 
         return savedJobs.stream().map(saved -> {
             Job job = saved.getJob();
             Company company = job.getCompany();
 
-            SavedJobResponseDTO dto = new SavedJobResponseDTO();
+            SavedJobResponse dto = new SavedJobResponse();
             dto.setId(saved.getId());
             dto.setJobId(job.getId());
             dto.setJobTitle(job.getTitle());

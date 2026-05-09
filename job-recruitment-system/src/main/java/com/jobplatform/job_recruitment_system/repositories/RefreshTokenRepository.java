@@ -15,7 +15,6 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     // Tìm kiếm token trong DB xem có tồn tại không
     Optional<RefreshToken> findByToken(String token);
 
-    // Dùng để xóa token khi người dùng bấm Đăng Xuất (Logout)
     @Modifying
     @Transactional
     int deleteByUser(User user);

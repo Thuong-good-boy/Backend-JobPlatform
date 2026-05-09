@@ -26,13 +26,11 @@ public class FileUploadService {
     }
 
 
-    // Hàm Xóa ảnh
     public void deleteImage(String imageUrl) {
         try {
             String publicId = getPublicIdFromUrl(imageUrl);
 
             if (publicId != null) {
-                // Gọi lên Cloudinary để xóa
                 cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
                 System.out.println(">>> Đã xóa ảnh trên Cloudinary: " + publicId);
             }
@@ -41,18 +39,14 @@ public class FileUploadService {
         }
     }
 
-    // Hàm tách lấy ID từ Link ảnh (Helper)
     private String getPublicIdFromUrl(String url) {
         try {
             if (!url.contains("cloudinary.com")) {
                 return null;
             }
-            // Logic của bạn: Cắt từ dấu "/" cuối cùng đến dấu "."
             int beginIndex = url.lastIndexOf("/") + 1;
             int endIndex = url.lastIndexOf(".");
 
-            // Ví dụ: .../image/upload/v123/abcd-1234.jpg
-            // -> Lấy được: abcd-1234 (Đây chính là public_id nếu không dùng folder)
             return url.substring(beginIndex, endIndex);
         } catch (Exception e) {
             return null;

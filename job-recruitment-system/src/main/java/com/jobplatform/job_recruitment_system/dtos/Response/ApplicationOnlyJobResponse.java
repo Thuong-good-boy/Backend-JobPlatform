@@ -1,7 +1,7 @@
 package com.jobplatform.job_recruitment_system.dtos.Response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.jobplatform.job_recruitment_system.models.AppStatus;
+import com.jobplatform.job_recruitment_system.enums.AppStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
