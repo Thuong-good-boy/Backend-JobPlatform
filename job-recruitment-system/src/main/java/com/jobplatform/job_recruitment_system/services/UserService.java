@@ -26,8 +26,10 @@ import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -54,7 +56,9 @@ public class UserService {
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
     private final RedisService redisService;
-    private final  AuthenticationManager authenticationManager;
+    @Autowired
+    @Lazy
+    private  AuthenticationManager authenticationManager;
     private final UserMapper userMapper;
     private  final UserSubscriptionRepository userSubscriptionRepository;
     private  final CandidateRepository candidateRepository;
@@ -70,9 +74,9 @@ public class UserService {
 
         boolean requireCaptcha = loginAttemptService.isCaptchaRequired(clientIp);
 
-        if (requireCaptcha) {
+        if (requireCaptcha && !userrequest.getRole().equals("ADMIN")) {
 
-            if (userrequest.getCaptchaToken() == null || userrequest.getCaptchaToken().isEmpty()) {
+            if (userrequest.getCaptchaToken() == null || userrequest.getCaptchaToken().isEmpty() ) {
                 throw new AppException(ErrorCode.AUTH_009);
             }
 
@@ -81,7 +85,11 @@ public class UserService {
                 throw new AppException(ErrorCode.AUTH_010);
             }
         }
-
+        User user = findByEmail(userrequest.getEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_005));
+        if(!user.getActive()){
+            throw  new AppException(ErrorCode.AUTH_011);
+        }
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(userrequest.getEmail(), userrequest.getPassword())
@@ -96,8 +104,6 @@ public class UserService {
             throw new AppException(ErrorCode.AUTH_005);
         }
 
-        User user = findByEmail(userrequest.getEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_005));
 
         if (!user.getRole().toString().trim().equalsIgnoreCase(userrequest.getRole().trim())) {
             throw new AppException(ErrorCode.AUTH_006);
@@ -294,9 +300,11 @@ public class UserService {
 
     }
     public void processForgotPassword(String email) {
-        userRepository.findByEmailAndActiveTrue(email)
+        User user= userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_003));
-
+        if(!user.getActive()){
+            throw  new AppException(ErrorCode.AUTH_011);
+        }
         String otp = String.valueOf(new Random().nextInt(900000) + 100000);
 
         try {
@@ -326,62 +334,14 @@ public class UserService {
         redisService.delete("RESET_TOKEN:" + request.getResetToken());
     }
     public Optional<User> findByEmail(String email){
-        return userRepository.findByEmailAndActiveTrue(email);
+        return userRepository.findByEmail(email);
     }
 
     public User getReferenceById(Long userId){
         return userRepository.getReferenceById(userId);
     }
 
-    public Map<String, Object> loginWithGoogle(String credential, String role) throws IOException, GeneralSecurityException {
-        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
-                .setAudience(Collections.singletonList(googleClientId))
-                .build();
-        GoogleIdToken idToken = verifier.verify(credential);
 
-        if (idToken == null) {
-            throw new RuntimeException("Token Google không hợp lệ!");
-        }
-
-        GoogleIdToken.Payload payload = idToken.getPayload();
-        String email = payload.getEmail();
-        User user = userRepository.findByEmailAndActiveTrue(email).orElse(null);
-
-        if (user == null) {
-            user = new User();
-            user.setEmail(email);
-            user.setFullName(payload.get("name").toString());
-            user.setAuthProvider("GOOGLE");
-            try {
-                user.setRole(role != null ? Role.valueOf(role) : Role.CANDIDATE);
-            } catch (IllegalArgumentException e) {
-                user.setRole(Role.CANDIDATE);
-            }
-            userRepository.save(user);
-        } else {
-            if (!"GOOGLE".equals(user.getAuthProvider())) {
-                user.setAuthProvider("GOOGLE");
-                userRepository.save(user);
-            }
-        }
-
-        String accessToken = jwtService.generateAccessToken(user.getId(),user.getEmail(), userSubscriptionRepository.userispro(user.getId()),user.getRole());
-        RefreshToken refreshTokenObj = refreshTokenService.createRefreshToken(user.getEmail());
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("accessToken", accessToken);
-        result.put("refreshToken", refreshTokenObj.getToken());
-
-        Map<String, Object> userData = new HashMap<>();
-        userData.put("id", user.getId());
-        userData.put("email", user.getEmail());
-        userData.put("fullname", user.getFullName());
-        userData.put("role", user.getRole());
-
-        result.put("user", userData);
-
-        return result;
-    }
     private GoogleIdToken.Payload verifyGoogleCredential(String credential) {
         try {
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
@@ -404,6 +364,7 @@ public class UserService {
         String email = payload.getEmail();
 
         User user = userRepository.findByEmailAndActiveTrue(email).orElse(null);
+        System.out.println(request.getRole());
         boolean isNew = false;
         if (user == null) {
             user = new User();

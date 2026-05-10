@@ -1,7 +1,5 @@
 package com.jobplatform.job_recruitment_system.services;
 
-import com.jobplatform.job_recruitment_system.config.CloudinaryConfig;
-import com.jobplatform.job_recruitment_system.dtos.RecentApplicationReponse;
 import com.jobplatform.job_recruitment_system.dtos.Response.*;
 import com.jobplatform.job_recruitment_system.dtos.request.CompanyOnboardingRequest;
 import com.jobplatform.job_recruitment_system.dtos.request.UpDateProfileCompanyRequest;
@@ -23,7 +21,6 @@ import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -45,11 +42,14 @@ public class CompanyService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.AUTH_008));
         Company company = companyRepository.findById(userId).orElse(new Company());
+
         if (company.getUser() == null) {
             company.setUser(user);
         }
         companyMapper.upDateCompany( request,company);
-
+        if(companyRepository.existsTCode(company.getTaxCode())){
+            throw new AppException(ErrorCode.COM_006);
+        }
         if (request.getLogo() != null && !request.getLogo().isEmpty()) {
             String logoUrl = fileUploadService.uploadFile(request.getLogo());
             company.setLogoUrl(logoUrl);
@@ -154,7 +154,7 @@ public class CompanyService {
 
             String currentTax = company.getTaxCode() != null ? company.getTaxCode().trim() : "";
             String aiTax = ocrResultReponse.getTaxCode().trim();
-
+            System.out.println();
             boolean isTaxMatch = currentTax.equals(aiTax);
             boolean isNameMatch = aiName.contains(inputName) || inputName.contains(aiName);
 
@@ -204,13 +204,6 @@ public class CompanyService {
         return  companyRepository.findByUserId(companyId).orElseThrow(()->new AppException(ErrorCode.COM_001));
     }
     public Page<Candidate> searchCandidate(String keyword, String location, Integer minExp,List<String> skills, int page){
-        System.out.println("===== SEARCH PARAMS =====");
-        System.out.println("keyword = " + keyword);
-        System.out.println("location = " + location);
-        System.out.println("minExp = " + minExp);
-        System.out.println("skills = " + skills);
-        System.out.println("page = " + page);
-        System.out.println("=========================");
         String skillsJsonString = null;
         if(skills != null && !skills.isEmpty()){
             ObjectNode rootNode = objectMapper.createObjectNode();

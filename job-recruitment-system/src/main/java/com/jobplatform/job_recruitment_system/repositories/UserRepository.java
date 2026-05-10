@@ -21,6 +21,7 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmailAndActiveTrue(String email);
+    Optional<User> findByEmail(String email);
     Optional<User> findById(Long userId);
     @Query(value = """
     with in_3month as (

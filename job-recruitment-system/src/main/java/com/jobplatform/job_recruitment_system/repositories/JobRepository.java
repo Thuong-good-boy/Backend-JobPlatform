@@ -29,7 +29,11 @@ public interface JobRepository extends JpaRepository<Job, Long> {
     order by case when j.trendingUntil > CURRENT_TIMESTAMP  THEN 1 ELSE 0 END DESC
 """)
     Page<Job> findAllJobsOpen(Pageable pageable);
-    Page<Job> findAll( Pageable pageable);
+
+    @Query("""
+        select j from Job j where j.title like %:search% and j.status = :status
+""")
+    Page<Job> findAllForAdmin( Pageable pageable,@Param("search") String search,@Param("status") JobStatus status );
 
     @Query(value = """
     SELECT * FROM jobs 

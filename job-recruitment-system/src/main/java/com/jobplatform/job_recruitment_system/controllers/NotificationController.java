@@ -5,10 +5,12 @@ import com.jobplatform.job_recruitment_system.repositories.NotificationRepositor
 import com.jobplatform.job_recruitment_system.services.NotificationService;
 import com.jobplatform.job_recruitment_system.services.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/notifications")
@@ -16,11 +18,28 @@ import java.util.List;
 public class NotificationController {
 
     private final NotificationService notificationService;
-    private  final UserService userService;
     @GetMapping
-    public ResponseEntity<List<Notification>> getUserNotifications() {
+    public ResponseEntity<Page<Notification>> getUserNotifications(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
 
-        List<Notification> notifications =  notificationService.findByUserIdOrderByCreatedAtDesc();
+        Page<Notification> notifications =  notificationService.findByRecipientIdOrderByCreatedAtDesc(page, size);
         return ResponseEntity.ok(notifications);
     }
+    @GetMapping("/unread-count")
+    public  ResponseEntity<?> getUnreadCount(){
+        return ResponseEntity.ok(notificationService.countUnread());
+    }
+    @PutMapping("/{id}/read")
+    public  ResponseEntity<?> markAsRead(@PathVariable Long id){
+        notificationService.statusRead(id);
+        return ResponseEntity.ok(Map.of("message","Thông báo đã được đọc"));
+    }
+    @PutMapping("/read-all")
+    public ResponseEntity<?> markAllAsRead() {
+        notificationService.markAllAsRead();
+        return ResponseEntity.ok(Map.of("message", "Đã đánh dấu đọc tất cả"));
+    }
+
 }

@@ -48,9 +48,15 @@ public class JobService {
         Pageable pageable = PageRequest.of(page,size);
             return jobRepository.findAllJobsOpen(pageable);
     }
-    public Page<Job> getJobsForAdmin(int page, int size) {
+    public Page<Job> getJobsForAdmin(int page, int size, String search, String status) {
         Pageable pageable = PageRequest.of(page,size);
-        return jobRepository.findAll(pageable);
+            if(status.equals("ALL")){
+           return   jobRepository.findAll(pageable);
+        }else{
+            JobStatus jobStatus = JobStatus.valueOf(status);
+            return jobRepository.findAllForAdmin(pageable, search, jobStatus);
+        }
+
     }
     public Page<JobRecommendationResponse> getJobRecommendationResponses(int page, int size){
 
@@ -169,11 +175,11 @@ public class JobService {
         }).collect(Collectors.toList());
     }
     @Transactional
-    public Job updateJobStatus(Long jobId, JobStatus newStatus, Long userId) {
+    public Job updateJobStatus(Long jobId, JobStatus newStatus) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_001));
         User user = userService.getUserId(userService.getCurrentUserId()).orElseThrow(()-> new AppException(ErrorCode.AUTH_008));
-        if ( Role.ADMIN.equals(user.getRole())) {
+        if (!Role.ADMIN.equals(user.getRole())) {
             throw new AppException(ErrorCode.JOB_005);
         }
         job.setStatus(newStatus);

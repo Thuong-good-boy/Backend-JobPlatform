@@ -1,6 +1,5 @@
 package com.jobplatform.job_recruitment_system.dtos.Response;
 
-import com.jobplatform.job_recruitment_system.dtos.RecentApplicationReponse;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -21,5 +20,5 @@ public class CompanyDashboardResponse {
     private long newApplications;
 
     @Valid
-    private List<RecentApplicationReponse> recentApplications;
+    private List<RecentApplicationJobTitleReponse> recentApplications;
 }

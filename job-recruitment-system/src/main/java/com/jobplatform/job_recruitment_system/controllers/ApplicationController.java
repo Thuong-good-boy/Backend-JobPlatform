@@ -23,10 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Validated
 public class ApplicationController {
-    private final ApplicationRepository applicationRepository;
-    private final JobRepository jobRepository;
-    private final UserService userService;
-    private final CvRepository cvRepository; // Cần cái này để tìm CV
+
     private  final ApplicationService applicationService;
     @PostMapping("/apply")
     public ResponseEntity<?> applyJob(@RequestBody ApplyRequest request) {

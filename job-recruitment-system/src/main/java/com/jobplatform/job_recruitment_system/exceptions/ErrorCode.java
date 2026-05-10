@@ -14,6 +14,7 @@ public enum ErrorCode {
     AUTH_008("Tài khoản không tồn tại!", HttpStatus.FORBIDDEN),
     AUTH_009("Nhập sai quá nhiều lần!",HttpStatus.TOO_MANY_REQUESTS),
     AUTH_010("Mã CAPTCHA không hợp lệ hoặc đã hết hạn!",HttpStatus.UNAUTHORIZED),
+    AUTH_011("Tài khoản này đã bị khóa!",HttpStatus.BAD_REQUEST),
     // 2. User & Account Errors
     USER_001("Email đã tồn tại trong hệ thống!", HttpStatus.BAD_REQUEST),
     USER_002("Tài khoản này đã tồn tại và được kích hoạt!", HttpStatus.BAD_REQUEST),
@@ -46,6 +47,7 @@ public enum ErrorCode {
     COM_003("Ảnh không rõ nét, AI không đọc được thông tin!", HttpStatus.BAD_REQUEST),
     COM_004("Thông tin trên giấy phép không khớp với hồ sơ hiện tại!", HttpStatus.BAD_REQUEST),
     COM_005("Tài khoản của bạn chưa được xác thực. Vui lòng chờ duyệt GPKD!",HttpStatus.BAD_REQUEST),
+    COM_006("TaxCode này đã được sử dụng",HttpStatus.ALREADY_REPORTED),
     // 5. Candidate & CV Errors
     CV_001("Chưa có profile ứng viên", HttpStatus.NOT_FOUND),
     CV_002("Không tìm thấy CV", HttpStatus.NOT_FOUND),

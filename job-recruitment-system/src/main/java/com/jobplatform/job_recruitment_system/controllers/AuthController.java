@@ -30,7 +30,6 @@ public class AuthController {
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest userRequest, HttpServletRequest request) {
         try {
             LoginResponse userResponse = userService.login(userRequest,request);
-
             ResponseCookie cookie = CookieUtils.createRefreshTokenCookie(userResponse.getRefreshToken(),userRequest.isRemember());
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, cookie.toString())

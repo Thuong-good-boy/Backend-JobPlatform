@@ -162,8 +162,8 @@ public class JobController {
             @RequestParam @NotNull(message = "STATUS_REQUIRED") JobStatus status
     ) {
         try {
-            Long userId = userService.getCurrentUserId();
-            Job updatedJob = jobService.updateJobStatus(jobId, status, userId);
+
+            Job updatedJob = jobService.updateJobStatus(jobId, status);
             return ResponseEntity.ok(updatedJob);
         } catch (RuntimeException e) {
             return ResponseEntity.ok(Map.of("message",e.getMessage()));

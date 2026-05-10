@@ -15,11 +15,12 @@ import java.util.Optional;
 @Repository
 public interface CompanyRepository extends JpaRepository<Company, Long> {
 
-    // Kiểm tra xem Mã số thuế đã tồn tại chưa (để tránh trùng lặp)
-    boolean existsByTaxCode(String taxCode);
+
 
     Optional<Company> findByUserId(Long userId);
 
+    @Query("select count(c)>0 from Company c where c.taxCode = :taxcode")
+    boolean existsTCode(@Param("taxcode") String taxcode);
     Optional<Company> findByUser(User user);
 
     @Query("SELECT new com.jobplatform.job_recruitment_system.dtos.Response.TopCompanyResponse(" +

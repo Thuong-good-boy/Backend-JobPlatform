@@ -103,9 +103,11 @@ public class AdminController {
         @GetMapping("/jobManagement")
     public ResponseEntity<?> getAllJobs(
             @RequestParam(defaultValue = "0")int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam("search") String search,
+            @RequestParam("status") String status
     ) {
-        return ResponseEntity.ok( jobService.getJobsForAdmin(page,size));
+        return ResponseEntity.ok( jobService.getJobsForAdmin(page,size, search,status));
     }
 
 
