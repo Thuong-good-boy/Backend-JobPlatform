@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -29,6 +31,12 @@ public class ChatRoom {
     @JoinColumn(name = "candidate_id", nullable = false)
     private User candidate;
 
+
     @Column(name = "created_at")
+    @CreationTimestamp
     private LocalDateTime createdAt;
+    @Column(name = "last_message_at")
+    private LocalDateTime lastMessageAt;
+    @Transient
+    private Long unreadCount = 0L;
 }

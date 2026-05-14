@@ -25,10 +25,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handlingRuntimeException(RuntimeException exception) {
         Map<String, Object> errorResponse = new HashMap<>();
-        
-
         errorResponse.put("error", exception.getMessage());
-
         return ResponseEntity.status(ErrorCode.UNCATEGORIZED_EXCEPTION.getStatusCode()).body(errorResponse);
     }
     // bắt lỗi cho dto

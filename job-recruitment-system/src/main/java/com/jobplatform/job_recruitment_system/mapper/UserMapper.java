@@ -9,6 +9,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface UserMapper {
     @Mapping(target = "password",ignore = true)
+    @Mapping(target = "active",ignore = true)
     User toEntity(RegisterRequest registerRequest);
 
     @Mapping(target = "accessToken", ignore = true)

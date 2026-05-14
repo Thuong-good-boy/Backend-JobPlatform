@@ -10,6 +10,7 @@ import com.jobplatform.job_recruitment_system.services.UserService;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Slice;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -26,23 +27,36 @@ public class ChatRestController {
     private final ChatMessageService chatMessageService;
     private  final UserService userService;
 
-    // 1. Lấy danh sách phòng chat của 1 ứng viên
     @GetMapping("/rooms/candidate")
-    public ResponseEntity<List<ChatRoom>> getRoomsByCandidate() {
-        List<ChatRoom> rooms = chatRoomService.findByCandidateId();
+    public ResponseEntity<Slice<ChatRoom>> getRoomsByCandidate(@RequestParam(defaultValue = "0") int page,
+                                                              @RequestParam(defaultValue = "10") int size) {
+        Slice<ChatRoom> rooms = chatRoomService.findByCandidateId(page, size);
         return ResponseEntity.ok(rooms);
     }
 
     @GetMapping("/{roomId}/messages")
-    public ResponseEntity<List<ChatMessage>> getChatHistory(
-
+    public ResponseEntity<Slice<ChatMessage>> getChatHistory(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
             @PathVariable Long roomId) {
-        List<ChatMessage> messages = chatMessageService.findByRoomIdOrderBySentAtAsc(roomId);
+        Slice<ChatMessage> messages = chatMessageService.findByRoomIdOrderBySentAtAsc(roomId,page,size);
         return ResponseEntity.ok(messages);
     }
+    @PutMapping("/rooms/{roomId}/read")
+    public void markRoomAsRead(@PathVariable("roomId") Long roomId){
+        chatMessageService.markMessagesAsRead(roomId);
+    }
     @GetMapping("/rooms/company")
-    public ResponseEntity<List<ChatRoom>> getRoomsByCompany() {
-        List<ChatRoom> rooms = chatRoomService.findByCompanyId();
+    public ResponseEntity<Slice<ChatRoom>> getRoomsByCompany(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Slice<ChatRoom> rooms = chatRoomService.findByCompanyId(page, size);
         return ResponseEntity.ok(rooms);
+    }
+    @GetMapping("/rooms/unread-count")
+    public ResponseEntity<Long> getTotalUnreadCount() {
+        long total = chatRoomService.getTotalUnreadCount();
+        return ResponseEntity.ok(total);
     }
 }

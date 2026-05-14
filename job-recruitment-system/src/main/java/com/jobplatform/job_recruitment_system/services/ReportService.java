@@ -4,6 +4,7 @@ import com.jobplatform.job_recruitment_system.config.CloudinaryConfig;
 import com.jobplatform.job_recruitment_system.dtos.Response.ReportResponse;
 import com.jobplatform.job_recruitment_system.dtos.request.ReportProcessRequest;
 import com.jobplatform.job_recruitment_system.dtos.request.ReportSubmitRequest;
+import com.jobplatform.job_recruitment_system.enums.NotificationType;
 import com.jobplatform.job_recruitment_system.enums.ReportStatus;
 import com.jobplatform.job_recruitment_system.exceptions.AppException;
 import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
@@ -11,6 +12,7 @@ import com.jobplatform.job_recruitment_system.mapper.ReportMapper;
 import com.jobplatform.job_recruitment_system.models.*;
 import com.jobplatform.job_recruitment_system.repositories.*;
 import lombok.RequiredArgsConstructor;
+import org.aspectj.apache.bcel.Repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,7 +20,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @Service
@@ -32,12 +36,13 @@ public class ReportService {
     private  final ReportMapper mapper;
     private  final  UserRepository userRepository;
     private  final CandidateRepository candidateRepository;
-    private  final  CompanyRepository companyRepository;
-    public  void creatReportToCompany(ReportSubmitRequest request) throws  Exception{
+    private  final  NotificationService notificationService;
+    public  void creatReport(ReportSubmitRequest request) throws  Exception{
         Report report = new Report();
         User user = userService.getUserId(userService.getCurrentUserId()).orElseThrow(()-> new AppException(ErrorCode.AUTH_008));
         ReportReasons reasons = reportReasonsRepository.findById(request.getReasonId()).orElseThrow(()-> new AppException(ErrorCode.REPORTREASON_01));
-
+        try {
+        System.out.println("Vào report  đầu ");
         report.setReporter(user);
         report.setReportReason(reasons);
         report.setTargetId(request.getTargetId());
@@ -56,8 +61,32 @@ public class ReportService {
                 list.add(response);
             }
         }
-        report.setEvidences(list);
-        repository.save(report);
+            report.getEvidences().clear();
+            report.getEvidences().addAll(list);
+        Report savedReport=  repository.save(report);
+
+        NotificationType type= NotificationType.NEW_REPORT;
+        Map<String, Object> metadata= new HashMap<>();
+        metadata.put("reportId", savedReport.getId());
+        metadata.put("targetId", savedReport.getTargetId());
+        metadata.put("targetUrl", "/admin/reports");
+        Long a = 1L;
+        notificationService.sendNotification(
+                a,
+                user.getId(),
+                type,
+                metadata,
+                user.getEmail(),
+                savedReport.getTargetId(),
+                savedReport.getReportReason().getTitle()
+
+        );
+        } catch (Exception e) {
+            System.err.println("LỖI TẠI CREAT-REPORT: " + e.getMessage());
+            e.printStackTrace();
+            throw e; // Ném ngược ra để Controller bắt được lỗi
+        }
+
     }
     public Page<ReportResponse> getRepost(int page, int size){
         Pageable pageable = PageRequest.of(page,size);

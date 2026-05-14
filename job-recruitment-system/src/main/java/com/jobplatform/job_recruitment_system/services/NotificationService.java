@@ -42,10 +42,8 @@ public class NotificationService {
         notification.setMessage(message);
         notification.setMetadata(metadata);
         Notification saveNotification1= notificationRepository.save(notification);
-
-        messagingTemplate.convertAndSendToUser(
-                String.valueOf(recipientId),
-                "/queue/notifications",
+        messagingTemplate.convertAndSend(
+                "/topic/notifications/"+saveNotification1.getRecipientId(),
                 saveNotification1
         );
 
@@ -66,7 +64,7 @@ public class NotificationService {
         return notificationRepository.countUnread(userId);
     }
     public  void statusRead(Long id){
-        notificationRepository.markAsRead(id);
+         notificationRepository.markAsRead(id);
     }
     public  void markAllAsRead(){
         Long userId = userService.getCurrentUserId();

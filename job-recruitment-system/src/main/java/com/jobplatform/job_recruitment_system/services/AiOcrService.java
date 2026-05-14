@@ -25,7 +25,7 @@ public class AiOcrService {
 
     @Value("${gemini.api-key}")
     private String apiKey;
-    private SkillRepository skillRepository;
+    private final SkillRepository skillRepository;
     private final String OPEN_ROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
     private HttpHeaders createOpenRouterHeaders() {

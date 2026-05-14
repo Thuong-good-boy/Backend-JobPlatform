@@ -32,7 +32,7 @@ public class ReportController {
             return ResponseEntity.badRequest().body(errors);
         }
         try {
-            reportService.creatReportToCompany(request);
+            reportService.creatReport(request);
             return ResponseEntity.ok("Tạo thành công!");
         }catch (Exception e){
             return ResponseEntity.ok("Tạo thất bại");

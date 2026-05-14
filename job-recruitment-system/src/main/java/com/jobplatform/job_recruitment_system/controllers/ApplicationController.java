@@ -25,11 +25,6 @@ import java.util.List;
 public class ApplicationController {
 
     private  final ApplicationService applicationService;
-    @PostMapping("/apply")
-    public ResponseEntity<?> applyJob(@RequestBody ApplyRequest request) {
-            applicationService.applyJob(request);
-            return ResponseEntity.ok("Ứng tuyển thành công!");
-    }
     @GetMapping("/job/{jobId}")
     public ResponseEntity<List<ApplicationOnlyJobResponse>> getApplicationsByJob(
             @PathVariable
@@ -52,9 +47,11 @@ public class ApplicationController {
             @NotNull( message = "STATUT_INALID")
             AppStatus newStatus) {
         try {
+            System.out.println(newStatus+"////////////"+ applicationId);
             applicationService.updateApplicationStatus(applicationId, newStatus);
             return ResponseEntity.ok("Đã cập nhật trạng thái thành " + newStatus);
         } catch (RuntimeException e) {
+            e.printStackTrace();
             return ResponseEntity.badRequest().body("Lỗi: " + e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Lỗi hệ thống: " + e.getMessage());

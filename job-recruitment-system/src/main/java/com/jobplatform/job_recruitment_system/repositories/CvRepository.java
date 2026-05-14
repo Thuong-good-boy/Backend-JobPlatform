@@ -13,7 +13,27 @@ import java.util.Optional;
 public interface CvRepository extends JpaRepository<Cv, Long> {
     List<Cv> findAllByUser_IdAndActiveTrueOrderByCreatedAtDesc(Long userId);
     Optional<Cv> findFirstByUser_IdAndActiveTrueOrderByCreatedAtDesc(Long userId);
-
+    @Query(value = """
+        SELECT c.*
+        FROM cvs c
+        JOIN (
+            SELECT DISTINCT us.user_id
+            FROM user_subscriptions us
+            JOIN packages p
+                ON us.package_id = p.id
+            WHERE p.type IN ('COMPANY_PRO', 'CANDIDATE_PRO')
+              AND us.status = 'ACTIVE'
+              AND us.end_date >= CURRENT_TIMESTAMP
+        ) pro_users
+            ON c.user_id = pro_users.user_id
+        JOIN (
+            SELECT user_id, MAX(id) AS latest_cv_id
+            FROM cvs
+            GROUP BY user_id
+        ) latest_cv
+            ON c.id = latest_cv.latest_cv_id
+        """, nativeQuery = true)
+    List<Cv> findCvPro();
     @Query(value = """
     with in_3month as (
     	select generate_series(

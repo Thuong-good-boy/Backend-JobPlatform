@@ -84,7 +84,7 @@ public class AiMatchingService {
 
     @Async
     public void processNewJob(Job job) {
-        List<Cv> allCvs = cvRepository.findAll();
+        List<Cv> allCvs = cvRepository.findCvPro();
         for (Cv cv : allCvs) {
             calculateAndSave(cv, job);
         }

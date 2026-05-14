@@ -196,12 +196,12 @@ public class UserService {
             ObjectMapper mapper = new ObjectMapper();
             RegisterRequest request = mapper.readValue(userJson, RegisterRequest.class);
 
-            // 4. MAPPER CHẠY Ở ĐÂY: Biến DTO thành Entity
             User user = userMapper.toEntity(request);
 
             // Cấu hình các trường bảo mật
             user.setPassword(passwordEncoder.encode(request.getPassword()));
             user.setAuthProvider("LOCAL");
+            user.setActive(true);
 
             // Lưu vào DB
             userRepository.save(user);

@@ -37,7 +37,7 @@ public interface CandidateRepository extends JpaRepository<Candidate, Long> {
         AND (
             CAST(:skillsJson AS text) IS NULL 
             OR cv.cv_data @> CAST(:skillsJson AS jsonb)
-        )
+        )  
         """,
             countQuery = """
         SELECT count(c.id) FROM candidates c

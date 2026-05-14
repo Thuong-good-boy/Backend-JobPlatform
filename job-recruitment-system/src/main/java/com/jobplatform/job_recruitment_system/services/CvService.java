@@ -31,7 +31,7 @@ public class CvService {
         String fileUrl = fileUploadService.uploadFile(file);
 
         String cvDataJson = aiOcrService.extractCvInfoToJson(file);
-
+        System.out.println();
         Cv cv = new Cv();
         cv.setUser(user);
         cv.setFileUrl(fileUrl);

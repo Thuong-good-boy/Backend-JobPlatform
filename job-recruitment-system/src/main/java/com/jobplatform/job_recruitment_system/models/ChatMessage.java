@@ -21,13 +21,14 @@ public class ChatMessage {
     @Column(name = "sender_id", nullable = false)
     @JsonProperty("senderId")
     private Long senderId;
-
+    @Column(name = "is_read", columnDefinition = "boolean default false")
+    private boolean isRead;
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
     @Column(name = "sent_at")
     @JsonProperty("sentAt")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS") // 🟢 THÊM DÒNG NÀY
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
     private LocalDateTime sentAt;
     @PrePersist
     protected void onCreate() {

@@ -145,7 +145,7 @@ public class PaymentService {
             return signValue.equals(vnp_SecureHash);
         }
         @Transactional
-        public  void vnPayReturn(HttpServletRequest request, HttpServletResponse response){
+        public  void    vnPayReturn(HttpServletRequest request, HttpServletResponse response){
             Map<String, String> fields= new HashMap<>();
             for (Enumeration<String> params = request.getParameterNames();params.hasMoreElements();){
                 String fieldName = params.nextElement();
@@ -157,6 +157,7 @@ public class PaymentService {
             try {
                 String vnp_ResponseCode = request.getParameter("vnp_ResponseCode");
                 String vnp_TxnRef= request.getParameter("vnp_TxnRef");
+
                 if (verifyVnPayCallback(fields)) {
                     if ("00".equals(vnp_ResponseCode)) {
                         Payment payment = paymentRepository.findByTransactionRef(vnp_TxnRef).orElseThrow(() -> new AppException(ErrorCode.PAYMENT_001));
@@ -164,18 +165,21 @@ public class PaymentService {
                         payment.setPaidAt(LocalDateTime.now());
                         paymentRepository.save(payment);
                         Package aPackage= packageRepository.findById(payment.getJobPackage().getId()).orElse(null);
+                        User user =payment.getUser();
                         if(aPackage!= null){
-                            User user =payment.getUser();
-                            Company company = companyRepository.findByUser(user).orElse(null);
-                            if(company==null){
-                                throw new AppException(ErrorCode.COM_001);
-                            }
-                            if(aPackage.getJobPostLimit()!= null && aPackage.getJobPostLimit()>0 ){
-                                int currentBoosts = company.getRemainingBoosts() ;
-                                company.setRemainingBoosts(currentBoosts+aPackage.getJobPostLimit());
-                                companyRepository.save(company);
+                            if(Role.COMPANY.equals(user.getRole())){
+                                Company company = companyRepository.findByUser(user).orElse(null);
+                                if(company==null){
+                                    throw new AppException(ErrorCode.COM_001);
+                                }
+                                if(aPackage.getJobPostLimit()!= null && aPackage.getJobPostLimit()>0 ){
+                                    int currentBoosts = company.getRemainingBoosts() ;
+                                    company.setRemainingBoosts(currentBoosts+aPackage.getJobPostLimit());
+                                    companyRepository.save(company);
 
+                                }
                             }
+
                             if(PackageType.COMPANY_PRO.equals(aPackage.getType())|| PackageType.CANDIDATE_PRO.equals(aPackage.getType())){
                                 UserSubscription existingSub = userSubscriptionRepository.findActiveSubscription(user.getId());
                                 if(existingSub != null){

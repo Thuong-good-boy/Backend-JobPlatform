@@ -13,5 +13,7 @@ public enum NotificationType {
     REPORT_WARNING,
     NEW_JOB_PENDING,
     NEW_CV_PENDING,
-    NEW_REPORT
+    NEW_REPORT,
+    CHAT_NEW,
+    JOB_CHANGE_STATUS,
 }

@@ -47,6 +47,7 @@ public class CompanyService {
             company.setUser(user);
         }
         companyMapper.upDateCompany( request,company);
+        company.setRemainingBoosts(0);
         if(companyRepository.existsTCode(company.getTaxCode())){
             throw new AppException(ErrorCode.COM_006);
         }
@@ -212,9 +213,8 @@ public class CompanyService {
             skillsJsonString = rootNode.toString();
         }
         Pageable pageable = PageRequest.of(page,10);
-        Page<Candidate> result = candidateRepository.searchCandidates(
-                location, minExp, keyword, skillsJsonString, pageable);
-
+        Page<Candidate> result = candidateRepository.searchCandidates(location, minExp, keyword, skillsJsonString, pageable);
+        System.out.println("total_pages : "+ result.getTotalPages());
         return  result;
     }
 

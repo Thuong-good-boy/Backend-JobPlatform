@@ -13,7 +13,6 @@ public class Company {
     @Id
     @Column(name = "user_id")
     private Long userId;
-
     @OneToOne
     @MapsId
     @JoinColumn(name = "user_id")

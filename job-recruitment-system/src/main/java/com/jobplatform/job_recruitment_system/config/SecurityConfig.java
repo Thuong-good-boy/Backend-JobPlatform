@@ -49,7 +49,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH,"/api/jobs/*/status").hasAnyAuthority("COMPANY","ADMIN")
                         .requestMatchers("/api/jobs/*").hasAnyAuthority("COMPANY","ADMIN")
                         .requestMatchers(HttpMethod.DELETE,"/api/jobs/*").hasAuthority("COMPANY")
-                        .requestMatchers(HttpMethod.POST,"/api/application/apply").hasAuthority("CANDIDATE")
                         .requestMatchers(HttpMethod.GET, "/api/applications/job/**").hasAuthority("COMPANY")
                         .requestMatchers("/api/Skill").hasAnyAuthority("COMPANY","ADMIN")
                         .requestMatchers("/api/company/profile").hasAuthority("COMPANY")
@@ -73,6 +72,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT,"/apt/report/*/process").hasAuthority("ADMIN")
                         .requestMatchers("/api/notifications/**").hasAnyAuthority("ADMIN","CANDIDATE","COMPANY")
                         .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/chat/rooms/candidate").hasAuthority("CANDIDATE")
+                        .requestMatchers(HttpMethod.GET,"/api/chat/rooms/company").hasAuthority("COMPANY")
+                        .requestMatchers(HttpMethod.GET,"/api/chat/*/messages").hasAnyAuthority("CANDIDATE","COMPANY")
+
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

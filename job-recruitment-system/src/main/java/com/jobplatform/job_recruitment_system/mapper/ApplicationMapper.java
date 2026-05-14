@@ -22,7 +22,7 @@ public interface ApplicationMapper {
     @Mapping(target = "appliedAt", ignore = true)
     Application formApplicationRequesttoApplication(ApplicationRequest source);
 
-    @Mapping(target = "name", source = "fullname")
+    @Mapping(target = "name", source = "fullName")
     @Mapping(target = "job", source = "job.title")
     RecentApplicationReponse fromApplicationtoRecentApplicationReponse(Application soure);
 

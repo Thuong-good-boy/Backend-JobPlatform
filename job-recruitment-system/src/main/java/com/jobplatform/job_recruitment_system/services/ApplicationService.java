@@ -5,6 +5,7 @@ import com.jobplatform.job_recruitment_system.dtos.Response.AppliedJobResponse;
 import com.jobplatform.job_recruitment_system.dtos.request.ApplyRequest;
 import com.jobplatform.job_recruitment_system.dtos.Response.ApplicationOnlyJobResponse;
 import com.jobplatform.job_recruitment_system.dtos.request.ApplicationRequest;
+import com.jobplatform.job_recruitment_system.dtos.request.ChatMessageRequest;
 import com.jobplatform.job_recruitment_system.enums.AppStatus;
 import com.jobplatform.job_recruitment_system.enums.NotificationType;
 import com.jobplatform.job_recruitment_system.exceptions.AppException;
@@ -25,7 +26,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class ApplicationService {
+public class  ApplicationService {
     
     private final ApplicationRepository applicationRepository;
      private final CvRepository cvRepository;
@@ -33,10 +34,11 @@ public class ApplicationService {
      private final UserRepository userRepository;
     private  final  NotificationService notificationService;
     private  final  UserService userService;
-    private  final  CompanyRepository companyRepository;
     private  final ApplicationMapper applicationMapper;
-    @Transactional
-    public Application applyForJob(ApplicationRequest request,Long jobId) {
+    private  final ChatMessageService chatMessageService;
+    private final  ChatRoomService chatRoomService;
+    private  final ChatRoomRepository chatRoomRepository;
+    public void applyForJob(ApplicationRequest request,Long jobId) {
         Long  userId= userService.getCurrentUserId();
         Job job = jobRepository.getReferenceById(jobId);
         Cv cv = cvRepository.findById(request.getCvId())
@@ -48,52 +50,32 @@ public class ApplicationService {
         if(!ispro&& applicationRepository.getCountApply(userId)>=1){
            throw  new AppException(ErrorCode.NOTPRO_01);
         }
+        try {
         Application app =  applicationMapper.formApplicationRequesttoApplication(request);
         app.setUser(user);
         app.setCv(cv);
         app.setJob(job);
-        return applicationRepository.save(app);
+        app.setFullName(request.getFullName());
+        applicationRepository.save(app);
+
+        NotificationType type = NotificationType.NEW_APPLICATION;
+        Map<String,Object> metadata = new HashMap<>();
+        metadata.put("jobId",jobId);
+        metadata.put("targetUrl","/company/jobs/detail/" + jobId);
+        System.out.println("có vào check 01" );
+        notificationService.sendNotification(
+                job.getCompany().getUserId(),
+                userId,
+                type,
+                metadata,
+                user.getFullName(),
+                job.getTitle()
+        );
+    }catch (Exception e){
+        new AppException(ErrorCode.USER_011);
     }
-    @Transactional
-    public void applyJob(ApplyRequest request){
-        Long userId = userService.getCurrentUserId();
-        User user= userService.getUserId(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_012));
-        Job job = jobRepository.findById(request.getJobId())
-                .orElseThrow(() -> new AppException(ErrorCode.JOB_001));
-        Cv cv = cvRepository.findById(request.getCvId())
-                .orElseThrow(() -> new AppException(ErrorCode.CV_002));
-
-        if (!cv.getUser().getId().equals(user.getId())) {
-             new AppException(ErrorCode.CV_005);
-        }
-        if (applicationRepository.existsByJobIdAndCvId(request.getJobId(), request.getCvId())) {
-            new AppException(ErrorCode.JOB_007);
-        }
-        try {
-            Application app = new Application();
-            app.setJob(job);
-            app.setCv(cv);
-            app.setCoverLetter(request.getCoverLetter());
-            Application application= applicationRepository.save(app);
-            NotificationType type = NotificationType.NEW_APPLICATION;
-            Map<String,Object> metadata = new HashMap<>();
-            metadata.put("jobId",request.getJobId());
-            metadata.put("targetUrl","/company/applications" + application.getId());
-            notificationService.sendNotification(
-                    job.getCompany().getUserId(),
-                    userId,
-                    type,
-                    metadata,
-                    user.getFullName(),
-                    job.getTitle()
-            );
-        }catch (Exception e){
-            new AppException(ErrorCode.USER_011);
-        }
-
-
     }
+
     public  Boolean checkByJobIdAndCv_User_Id(Long jobId, Long userId){
         return applicationRepository.existsByJobIdAndCv_User_Id(jobId,userId);
     }
@@ -156,47 +138,38 @@ public class ApplicationService {
 
     }
     @Transactional
-    public void updateStatus(Long applyId, AppStatus newStatus) {
-        Application app = applicationRepository.findById(applyId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn ứng tuyển!"));
-
-        app.setStatus(newStatus);
-        applicationRepository.save(app);
-    }
-    @Transactional
     public void updateApplicationStatus(Long applicationId, AppStatus newStatus) {
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_012));
 
         application.setStatus(newStatus);
         applicationRepository.save(application);
+        if(AppStatus.INTERVIEW.equals(newStatus)){
+            try {
+                chatRoomService.createRoomIfNotExist(
+                        application.getJob().getId(),
+                        application.getJob().getCompany().getUserId(),
+                        application.getUser().getId()
+                );
+            } catch (Exception e) {
+                System.err.println("Lỗi khi tạo phòng chat: " + e.getMessage());
+            }
+        }
+        NotificationType type = (newStatus == AppStatus.INTERVIEW)
+                ? NotificationType.INTERVIEW_INVITED
+                : NotificationType.APPLICATION_REJECTED;
 
-//        if (newStatus == AppStatus.INTERVIEW) {
-//            Company company = application.getJob().getCompany();
-//            User candidate = application.getCv().getUser();
-//            Job job = application.getJob();
-//
-//            boolean roomExists = chatRoomRepository.existsByCompanyIdAndCandidateIdAndJobId(company.getUserId(), candidate.getId(), job.getId());
-//
-//            if (!roomExists) {
-//                ChatRoom chatRoom = new ChatRoom();
-//                chatRoom.setCompany(company);
-//                chatRoom.setCandidate(candidate);
-//                chatRoom.setJob(job);
-//                chatRoom.setCreatedAt(LocalDateTime.now());
-//
-//                chatRoomRepository.save(chatRoom);
-//                String notificationMessage = "Chúc mừng! Công ty " + company.getCompanyName() +
-//                        " đã duyệt hồ sơ của bạn cho vị trí " + job.getTitle() + ". Hãy vào mục Tin nhắn nhé!";
-//                Notification notif = new Notification();
-//                notif.setUser(candidate);
-//                notif.setMessage(notificationMessage);
-//                notif.setRead(false);
-//                notificationRepository.save(notif);
-//                // gửi qua kênh, xong bên front nhận
-//                String destination = "/topic/notifications/" + candidate.getEmail();
-//                messagingTemplate.convertAndSend(destination, notificationMessage);
-//            }
-//        }
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("applicationId", applicationId);
+        metadata.put("jobId", application.getJob().getId());
+        metadata.put("targetUrl", "/jobs/" + application.getJob().getId());
+
+        notificationService.sendNotification(
+                application.getUser().getId(),
+                application.getJob().getCompany().getUserId(),
+                type,
+                metadata,
+                application.getJob().getTitle()
+        );
     }
 }

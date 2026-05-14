@@ -44,8 +44,8 @@ public class Application {
     @CreationTimestamp
     private LocalDateTime appliedAt;
 
-    @Column(length = 100)
-    private String fullname;
+    @Column(name = "fullname", length = 100)
+    private String fullName;
 
     @Column(length = 15)
     private String phone;

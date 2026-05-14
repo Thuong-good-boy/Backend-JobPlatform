@@ -15,6 +15,7 @@ import org.mapstruct.MappingTarget;
 public interface CompanyMapper {
     @Mapping(target = "logoUrl", ignore = true)
     @Mapping(target = "licenseImageUrl", ignore = true)
+    @Mapping(target = "remainingBoosts", ignore = true)
     void upDateCompany(CompanyOnboardingRequest source,@MappingTarget Company  target);
 
     @Mapping(target = "activeJobs", ignore = true)

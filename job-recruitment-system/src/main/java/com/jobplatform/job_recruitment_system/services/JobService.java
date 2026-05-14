@@ -6,6 +6,7 @@ import com.jobplatform.job_recruitment_system.dtos.request.JobPostRequest;
 import com.jobplatform.job_recruitment_system.dtos.Response.JobRecommendationResponse;
 import com.jobplatform.job_recruitment_system.dtos.Response.JobResponse;
 import com.jobplatform.job_recruitment_system.enums.JobStatus;
+import com.jobplatform.job_recruitment_system.enums.NotificationType;
 import com.jobplatform.job_recruitment_system.enums.Role;
 import com.jobplatform.job_recruitment_system.exceptions.AppException;
 import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
@@ -13,9 +14,12 @@ import com.jobplatform.job_recruitment_system.mapper.JobMapper;
 import com.jobplatform.job_recruitment_system.models.*;
 import com.jobplatform.job_recruitment_system.repositories.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.JsonNode;
@@ -24,10 +28,7 @@ import tools.jackson.databind.node.StringNode;
 
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,6 +45,10 @@ public class JobService {
     private final SavedJobRepository savedJobRepository;
     private final JobMapper jobMapper;
     private  final  UserSubscriptionRepository userSubscriptionRepository;
+    private  final  AiMatchingService aiMatchingService;
+    private  final  NotificationRepository notificationRepository;
+    private  final MessageSource messageSource;
+    private  final SimpMessagingTemplate messagingTemplate;
     public Page<Job> getJobsForUser(int page, int size) {
         Pageable pageable = PageRequest.of(page,size);
             return jobRepository.findAllJobsOpen(pageable);
@@ -131,6 +136,32 @@ public class JobService {
             job.setSkills(jobSkills);
         }
         Job jobnew= jobRepository.save(job);
+        aiMatchingService.processNewJob(jobnew);
+        NotificationType type = NotificationType.NEW_JOB_PENDING;
+        Locale locale = LocaleContextHolder.getLocale();
+        String titleKey ="noti.title."+type.name();
+        String messageKey="noti.message."+type.name();
+
+        String title = messageSource.getMessage(titleKey,null,locale);
+        String message= messageSource.getMessage(messageKey, new Object[]{companyProfile.getCompanyName(), jobnew.getTitle()},locale);
+        Map<String, Object> metadata= new HashMap<>();
+        metadata.put("jobId", job.getId());
+        metadata.put("companyId", companyProfile.getUserId());
+        metadata.put("targetUrl", "/admin/management");
+        Notification notification = new Notification();
+        notification.setRecipientId(1L);
+        notification.setSenderId(companyProfile.getUserId());
+        notification.setType(type);
+        notification.setTitle(title);
+        notification.setMessage(message);
+        notification.setMetadata(metadata);
+        Notification saveNotification1= notificationRepository.save(notification);
+        messagingTemplate.convertAndSend(
+                "/topic/notifications/"+saveNotification1.getRecipientId(),
+                saveNotification1
+        );
+
+
     }
 
     public Page<Job> searchJobs(String keyword,int page, int size) {
@@ -182,8 +213,43 @@ public class JobService {
         if (!Role.ADMIN.equals(user.getRole())) {
             throw new AppException(ErrorCode.JOB_005);
         }
-        job.setStatus(newStatus);
-        return jobRepository.save(job);
+         job.setStatus(newStatus);
+
+
+        Job jobnew =  jobRepository.save(job);
+        Company companyProfile = jobnew.getCompany();
+        aiMatchingService.processNewJob(jobnew);
+        NotificationType type;
+        if(JobStatus.OPEN.equals(newStatus)){
+           type = NotificationType.JOB_CHANGE_STATUS;
+        }else{
+            type =NotificationType.JOB_REJECTED;
+        }
+
+        Locale locale = LocaleContextHolder.getLocale();
+        String titleKey ="noti.title."+type.name();
+        String messageKey="noti.message."+type.name();
+
+        String title = messageSource.getMessage(titleKey,null,locale);
+        String message= messageSource.getMessage(messageKey, new Object[]{companyProfile.getCompanyName(), jobnew.getTitle()},locale);
+        Map<String, Object> metadata= new HashMap<>();
+        metadata.put("jobId", job.getId());
+        metadata.put("companyId", companyProfile.getUserId());
+        metadata.put("targetUrl", "/company/jobs");
+        Notification notification = new Notification();
+        notification.setRecipientId(companyProfile.getUserId());
+        notification.setSenderId(1L);
+        notification.setType(type);
+        notification.setTitle(title);
+        notification.setMessage(message);
+        notification.setMetadata(metadata);
+        Notification saveNotification1= notificationRepository.save(notification);
+        messagingTemplate.convertAndSend(
+                "/topic/notifications/"+saveNotification1.getRecipientId(),
+                saveNotification1
+        );
+        return jobnew;
+
     }
 
     @Transactional

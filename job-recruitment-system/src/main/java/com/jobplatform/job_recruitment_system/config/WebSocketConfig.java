@@ -27,8 +27,5 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
         // Tiền tố cho các tin nhắn từ Frontend gửi LÊN Backend
         registry.setApplicationDestinationPrefixes("/app");
-
-        // Tiền tố mặc định khi muốn gửi tin nhắn riêng cho 1 user
-        registry.setUserDestinationPrefix("/user");
     }
 }

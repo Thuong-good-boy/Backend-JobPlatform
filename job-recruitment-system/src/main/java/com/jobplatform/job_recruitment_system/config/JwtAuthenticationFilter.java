@@ -51,7 +51,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.contains("/api/auth/login-google")||
                 path.contains("/api/auth/resendRegister-otp")||
                 path.contains("/api/payment/vnpay-return") ||
-                path.contains("/api/payment/vnpay_ipn")
+                path.contains("/api/payment/vnpay_ipn") ||
+                path.contains("/ws")
 
         ) {
 

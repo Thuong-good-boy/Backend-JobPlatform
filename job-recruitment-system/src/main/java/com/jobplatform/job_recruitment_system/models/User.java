@@ -53,7 +53,7 @@
         private String avatarUrl;
 
         @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-        @com.fasterxml.jackson.annotation.JsonIgnore // Thêm cái này để an toàn tuyệt đối
+        @com.fasterxml.jackson.annotation.JsonIgnore
         private List<RefreshToken> refreshTokens;
 
 
