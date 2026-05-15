@@ -94,14 +94,12 @@ public class  ApplicationService {
             dto.setLocation(job.getLocation());
             dto.setStatus(app.getStatus().name());
 
-            // Xử lý Lương (Gộp Min và Max)
             if (job.getSalaryMin() != null && job.getSalaryMax() != null) {
                 dto.setSalary(job.getSalaryMin() + " - " + job.getSalaryMax());
             } else {
                 dto.setSalary("Thỏa thuận");
             }
 
-            // Xử lý Công ty (Dùng companyName)
             if (company != null) {
                 dto.setCompanyName(company.getCompanyName());
                 dto.setLogoUrl(company.getLogoUrl() != null ? company.getLogoUrl() : "https://ui-avatars.com/api/?name=" + company.getCompanyName());
@@ -110,7 +108,6 @@ public class  ApplicationService {
                 dto.setLogoUrl("https://ui-avatars.com/api/?name=C");
             }
 
-            // Xử lý Ngày ứng tuyển (Dùng appliedAt có sẵn trong Model của ông)
             if (app.getAppliedAt() != null) {
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
                 dto.setAppliedDate(app.getAppliedAt().format(formatter));

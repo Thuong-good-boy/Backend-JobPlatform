@@ -33,7 +33,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/error").permitAll()
 
-                        .requestMatchers(HttpMethod.GET, "/api/jobs", "/api/jobs/**").hasAnyAuthority("CANDIDATE","COMPANY","ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/jobs", "/api/jobs/**").permitAll()
                         .requestMatchers("/api/admin/ai/sync-legacy-data").permitAll()
                         .requestMatchers(HttpMethod.POST,"/api/jobs/*/apply").hasAuthority("CANDIDATE")
                         .requestMatchers(HttpMethod.POST,"/api/jobs/*/save").hasAuthority("CANDIDATE")
@@ -63,7 +63,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST,"/api/payment/create-vnpay").hasAnyAuthority("CANDIDATE","COMPANY")
                         .requestMatchers(HttpMethod.GET,"/api/payment/vnpay-return").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/payment/vnpay_ipn").permitAll()
-                        .requestMatchers(HttpMethod.GET,"/api/candidate/company/job").hasAuthority("CANDIDATE")
+                        .requestMatchers(HttpMethod.GET,"/api/candidate/company/job").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/reportreason").hasAuthority("ADMIN")
                         .requestMatchers(HttpMethod.GET,"/api/company/candidate/search").hasAuthority("COMPANY")
                         .requestMatchers(HttpMethod.GET,"/api/company/candidate/profile").hasAuthority("COMPANY")

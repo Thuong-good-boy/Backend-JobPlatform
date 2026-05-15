@@ -6,11 +6,13 @@ import com.jobplatform.job_recruitment_system.dtos.request.CandidateProfileReque
 import com.jobplatform.job_recruitment_system.dtos.request.ReportSubmitRequest;
 import com.jobplatform.job_recruitment_system.models.Candidate;
 import com.jobplatform.job_recruitment_system.models.Company;
+import com.jobplatform.job_recruitment_system.models.Job;
 import com.jobplatform.job_recruitment_system.models.ReportReasons;
 import com.jobplatform.job_recruitment_system.services.*;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -57,8 +59,11 @@ public class CandidateController {
         return ResponseEntity.ok("Cập nhật hồ sơ thành công!");
     }
     @GetMapping("/company/job")
-    public ResponseEntity<?> getalljobandcompany(@RequestParam(required = false) Long companyId) {
-        List<CompanyJobsByCandidateResponse> list = jobService.getalljobforcompany(companyId);
+    public ResponseEntity<?> getalljobandcompany(@RequestParam(required = false) Long companyId,
+         @RequestParam(defaultValue = "0") int page,
+    @RequestParam(defaultValue = "6") int size
+    ) {
+        Page<Job> list = jobService.getalljobforcompany(companyId, page, size);
         Company company = companyService.getCompanyById(companyId);
         List<ReportReasons> reportReasonsList = reasonsService.getReportCompany();
         return ResponseEntity.ok(Map.of(

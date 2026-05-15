@@ -32,8 +32,8 @@ public class AiOcrService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", "Bearer " + apiKey);
-        headers.set("HTTP-Referer", "http://localhost:8080"); // Bắt buộc cho OpenRouter
-        headers.set("X-Title", "Job Recruitment System");    // Bắt buộc cho OpenRouter
+        headers.set("HTTP-Referer", "http://localhost:8080");
+        headers.set("X-Title", "Job Recruitment System");
         return headers;
     }
 
@@ -42,16 +42,13 @@ public class AiOcrService {
         tools.jackson.databind.ObjectMapper mapper = new tools.jackson.databind.ObjectMapper();
 
         String base64Image = Base64.getEncoder().encodeToString(file.getBytes());
-        // Chuẩn Base64 mới cho OpenAI: data:image/jpeg;base64,...
         String dataUrl = "data:" + file.getContentType() + ";base64," + base64Image;
 
-        // --- CẬP NHẬT PROMPT: DẠY AI HIỂU MÃ SỐ DOANH NGHIỆP (GIỮ NGUYÊN PROMPT CŨ CỦA BẠN) ---
         String prompt = "Bạn là hệ thống đọc dữ liệu giấy tờ doanh nghiệp Việt Nam. Hãy trích xuất thông tin từ ảnh này:\n" +
                 "1. 'taxCode': Tìm dãy số cạnh dòng chữ 'Mã số doanh nghiệp' HOẶC 'Mã số thuế'. (Lưu ý: Mã số doanh nghiệp chính là Mã số thuế).\n" +
                 "2. 'companyName': Tìm tên công ty tiếng Việt đầy đủ  tên doanh nghiệp.\n" +
                 "Yêu cầu: Trả về 1 JSON duy nhất: {\"taxCode\": \"...\", \"companyName\": \"...\"}. Nếu không tìm thấy, trả về null.";
 
-        // Tạo Request Body theo chuẩn OpenAI cho OpenRouter
         Map<String, Object> requestBody = Map.of(
                 "model", "google/gemini-2.0-flash-001",
                 "messages", List.of(
@@ -92,7 +89,6 @@ public class AiOcrService {
                 )
         );
 
-        // Trả về String JSON trực tiếp để lưu DB
         Map<String, Object> response = sendRequestToOpenRouter(requestBody);
         return extractJsonFromResponse(response);
     }
@@ -107,24 +103,21 @@ public class AiOcrService {
                 "3. Trả về DUY NHẤT 1 chuỗi JSON với cấu trúc: {\"score\": 85.5, \"reason\": \"Ứng viên đáp ứng tốt kỹ năng Java nhưng thiếu kinh nghiệm quản lý.\"}";
 
         Map<String, Object> requestBody = Map.of(
-                "model", "openai/gpt-oss-120b", // Dùng con hàng khủng bạn vừa test thành công
+                "model", "openai/gpt-oss-120b",
                 "messages", List.of(Map.of("role", "user", "content", prompt)),
-                "temperature", 0.3 // Giảm nhiệt độ để kết quả ổn định và bám sát prompt
+                "temperature", 0.3
         );
 
         return callAiAndParseJson(requestBody, MatchResultReponse.class);
     }
 
-    // --- CÁC HÀM HELPER (BỔ TRỢ) ĐỂ CODE SẠCH HƠN ---
 
-    // Gửi Request và trả về Map kết quả thô
     private Map<String, Object> sendRequestToOpenRouter(Map<String, Object> body) {
         RestTemplate restTemplate = new RestTemplate();
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, createOpenRouterHeaders());
         return restTemplate.postForObject(OPEN_ROUTER_URL, entity, Map.class);
     }
 
-    // Dùng Regex lấy đúng JSON ra khỏi text (Lấy kết quả OpenAI thô)
     private String extractJsonFromResponse(Map<String, Object> response) {
         if (response != null && response.containsKey("choices")) {
             List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
@@ -137,14 +130,13 @@ public class AiOcrService {
                 Pattern pattern = Pattern.compile("\\{.*\\}", Pattern.DOTALL);
                 Matcher matcher = pattern.matcher(content);
                 if (matcher.find()) {
-                    return matcher.group(); // Trả về chuỗi JSON chuẩn
+                    return matcher.group();
                 }
             }
         }
-        return "{}"; // Trả về JSON rỗng nếu lỗi
+        return "{}";
     }
 
-    // Gộp 3 bước: Gọi API -> Lấy JSON -> Chuyển thành Object Java
     private <T> T callAiAndParseJson(Map<String, Object> body, Class<T> clazz) {
         try {
             String jsonStr = extractJsonFromResponse(sendRequestToOpenRouter(body));

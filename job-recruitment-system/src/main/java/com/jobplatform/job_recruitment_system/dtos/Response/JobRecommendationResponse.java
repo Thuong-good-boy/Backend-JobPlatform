@@ -12,4 +12,5 @@ public class JobRecommendationResponse {
     private Job job;
     private Double matchScore;
     private String matchDetails;
+    private String nameCompany;
 }

@@ -13,6 +13,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -42,7 +45,7 @@ public class JobController {
     @GetMapping
     public ResponseEntity<?> getAllJobs(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "6") int size
     ) {
         return ResponseEntity.ok(jobService.getJobsForUser(page, size));
     }
@@ -50,14 +53,17 @@ public class JobController {
     @GetMapping("/recommended")
     public ResponseEntity<?> getAllPRo(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "6") int size
     ) {
         return ResponseEntity.ok((jobService.getJobRecommendationResponses(page, size)));
     }
 
     @GetMapping("/company/job")
-    public ResponseEntity<?> getalljobforcompany(@RequestParam(required = false) Long companyId) {
-        List<CompanyJobsByCandidateResponse> list = jobService.getalljobforcompany(companyId);
+    public ResponseEntity<?> getalljobforcompany(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size,
+            @RequestParam(required = false) Long companyId) {
+        Page<Job> list = jobService.getalljobforcompany(companyId,page, size);
         return ResponseEntity.ok(Map.of("data", list));
 
     }
@@ -66,7 +72,7 @@ public class JobController {
     public ResponseEntity<?> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "6") int size
     ) {
         return ResponseEntity.ok(jobService.searchJobs(keyword, page, size));
     }
@@ -85,8 +91,8 @@ public class JobController {
     @PostMapping("/{jobId}/post")
     public ResponseEntity<?> postJob(@PathVariable @NotNull(message = "JOB_REQUIRED") Long jobId) {
         try {
-            jobService.postJob(jobId);
-            return ResponseEntity.ok("Đẩy job thành công !");
+            Integer countPost= jobService.postJob(jobId);
+            return ResponseEntity.ok(countPost);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Lỗi đẩy tin: " + e.getMessage());
         }
@@ -105,14 +111,23 @@ public class JobController {
 
     @GetMapping("/{jobId}/applied-jobs")
     public ResponseEntity<?> appliedJob(@PathVariable @NotNull(message = "JOB_REQUIRED") Long jobId) {
-        Long userId = userService.getCurrentUserId();
-        return ResponseEntity.ok(applicationService.checkByJobIdAndCv_User_Id(jobId, userId));
+        try {
+            Long userId = userService.getCurrentUserId();
+            return ResponseEntity.ok(applicationService.checkByJobIdAndCv_User_Id(jobId, userId));
+        }catch (Exception e){
+            return ResponseEntity.ok(false);
+        }
+
     }
 
     @GetMapping("/{jobId}/saved-jobs")
     public ResponseEntity<?> savedJob(@PathVariable @NotNull(message = "JOB_REQUIRED") Long jobId) {
+        try {
         Long userId = userService.getCurrentUserId();
         return ResponseEntity.ok(saveJobService.existsByJobIdAndUserId(userId, jobId));
+    }catch (Exception e){
+        return ResponseEntity.ok(false);
+    }
     }
 
     @PostMapping("/{jobId}/save")

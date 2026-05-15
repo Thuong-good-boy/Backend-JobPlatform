@@ -14,11 +14,11 @@ import java.util.List;
 
 @Repository
 public interface MatchScoreRepository  extends JpaRepository<MatchScore, MatchScoreId> {
-    @Query("SELECT new com.jobplatform.job_recruitment_system.dtos.Response.JobRecommendationResponse(ms.job, ms.score, ms.match_details) " +
+    @Query("SELECT new com.jobplatform.job_recruitment_system.dtos.Response.JobRecommendationResponse(ms.job, ms.score, ms.match_details, ms.job.company.companyName) " +
             "FROM MatchScore ms WHERE ms.cv.id = :cvId AND ms.job.status = com.jobplatform.job_recruitment_system.enums.JobStatus.OPEN ORDER BY ms.score DESC")
     Page<JobRecommendationResponse> findRecommendedJobsByCvId(@Param("cvId") Long cvId, Pageable pageable);
 
-    @Query("SELECT new com.jobplatform.job_recruitment_system.dtos.Response.JobRecommendationResponse(ms.job, ms.score, ms.match_details) " +
+    @Query("SELECT new com.jobplatform.job_recruitment_system.dtos.Response.JobRecommendationResponse(ms.job, ms.score, ms.match_details, ms.job.company.companyName) " +
             "FROM MatchScore ms " +
             "WHERE ms.cv.id = :cvId " +
             "AND ms.job.status = com.jobplatform.job_recruitment_system.enums.JobStatus.OPEN " +
@@ -41,7 +41,7 @@ public interface MatchScoreRepository  extends JpaRepository<MatchScore, MatchSc
     """, nativeQuery = true)
     List<MatchScore> findRecommendedEntitiesByKeyword(@Param("cvId") Long cvId, @Param("keyword") String keyword);
 
-    @Query("Select new com.jobplatform.job_recruitment_system.dtos.Response.JobRecommendationResponse(ms.job, ms.score, ms.match_details) " +
+    @Query("Select new com.jobplatform.job_recruitment_system.dtos.Response.JobRecommendationResponse(ms.job, ms.score, ms.match_details, ms.job.company.companyName) " +
             "FROM MatchScore ms WHERE ms.cv.id = :cvId and ms.job.id =:jobId")
     JobRecommendationResponse findRecommendedJobsByJobId(@Param("jobId") Long jobId, @Param("cvId") Long cvId );
 }

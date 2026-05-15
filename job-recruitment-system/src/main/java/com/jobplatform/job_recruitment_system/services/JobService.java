@@ -292,19 +292,13 @@ public class JobService {
 
         jobRepository.delete(job);
     }
-    public List<CompanyJobsByCandidateResponse> getalljobforcompany( Long companyId){
-        Long userId= userService.getCurrentUserId();
-        if(userId==null){ throw  new AppException(ErrorCode.AUTH_008);}
-        Cv cv = cvService.getFirstCv(userId).orElse(null);
-        if (cv== null){
-            return jobRepository.findCompanyJobs(companyId,null);
-        }else{
-            return jobRepository.findCompanyJobs(companyId,cv.getId());
-        }
+    public Page<Job> getalljobforcompany( Long companyId, int page, int size){
+        Pageable pageable = PageRequest.of(page,size);
+        return jobRepository.findByJCompanyId(pageable,companyId);
 
     }
     @Transactional
-    public  void  postJob(Long jobId){
+    public  Integer  postJob(Long jobId){
             Long userId= userService.getCurrentUserId();
             User user = userService.getUserId(userId).orElse(null);
             if(user==null){
@@ -330,7 +324,7 @@ public class JobService {
                 job.setTrendingUntil(now.plusHours(24));
             }
             jobRepository.save(job);
-
+            return company.getRemainingBoosts();
     }
 
 
