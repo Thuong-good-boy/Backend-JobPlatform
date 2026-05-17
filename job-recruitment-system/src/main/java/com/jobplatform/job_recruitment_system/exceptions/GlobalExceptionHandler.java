@@ -1,5 +1,6 @@
 package com.jobplatform.job_recruitment_system.exceptions;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -9,12 +10,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 @ControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = AppException.class)
     public ResponseEntity<Map<String, Object>> handlingAppException(AppException exception) {
         ErrorCode errorCode = exception.getErrorCode();
-        
+        log.error("Exception caught in handlingAppException: ", exception);
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("code", errorCode.name());
         errorResponse.put("error", errorCode.getMessage());
@@ -24,6 +26,7 @@ public class GlobalExceptionHandler {
     
     @ExceptionHandler(value = RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handlingRuntimeException(RuntimeException exception) {
+        log.error("Uncaught RuntimeException: ", exception);
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("error", exception.getMessage());
         return ResponseEntity.status(ErrorCode.UNCATEGORIZED_EXCEPTION.getStatusCode()).body(errorResponse);
@@ -32,7 +35,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handlingValidationException(MethodArgumentNotValidException exception) {
 
-        // 1. Spring sẽ tóm lấy lỗi đầu tiên (ví dụ: "INVALID_EMAIL") từ DTO
+        log.warn("Validation error: {}", exception.getFieldError().getDefaultMessage());
         String enumKey = exception.getFieldError().getDefaultMessage();
 
         ErrorCode errorCode;

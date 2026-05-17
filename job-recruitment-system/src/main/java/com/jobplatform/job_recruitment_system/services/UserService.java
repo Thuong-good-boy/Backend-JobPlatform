@@ -305,6 +305,7 @@ public class UserService {
         if(!user.getActive()){
             throw  new AppException(ErrorCode.AUTH_011);
         }
+        System.out.println(email);
         String otp = String.valueOf(new Random().nextInt(900000) + 100000);
 
         try {
