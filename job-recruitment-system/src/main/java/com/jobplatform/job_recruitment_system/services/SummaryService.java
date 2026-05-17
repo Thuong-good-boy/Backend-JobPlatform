@@ -9,6 +9,7 @@ import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
 import com.jobplatform.job_recruitment_system.models.Application;
 import com.jobplatform.job_recruitment_system.models.SavedJob;
 import com.jobplatform.job_recruitment_system.repositories.ApplicationRepository;
+import com.jobplatform.job_recruitment_system.repositories.CompanyRepository;
 import com.jobplatform.job_recruitment_system.repositories.JobRepository;
 import com.jobplatform.job_recruitment_system.repositories.SavedJobRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,18 +24,22 @@ public class SummaryService {
     private  final ApplicationRepository applicationRepository;
     private final UserService userService;
     private  final SavedJobRepository savedJobRepository;
+    private  final CompanyRepository companyRepository;
     public SummaryReponse getSumary(){
         try {
             SummaryReponse reponse = new SummaryReponse();
             Long userid = userService.getCurrentUserId();
-            reponse.setTotalActiveJobs(jobRepository.totalActiveJobs(userid));
-            reponse.setTotalApplications(applicationRepository.totalApplications(userid));
-            reponse.setTotalSavedJobs(savedJobRepository.getTotalJobSave(userid));
+            Long companyId = companyRepository.getCompanyId(userid);
+            reponse.setTotalActiveJobs(jobRepository.totalActiveJobs(companyId));
+            reponse.setTotalApplications(applicationRepository.totalApplications(companyId));
+            reponse.setTotalSavedJobs(savedJobRepository.getTotalJobSave(companyId));
             return  reponse;
         }catch (Exception e){
-            new AppException(ErrorCode.USER_011);
+            e.printStackTrace();
+
+            throw new AppException(ErrorCode.USER_011);
         }
-        return null;
+
     }
     public List<ChartDataResponse> get7ngay(){
         Long userid =userService.getCurrentUserId();

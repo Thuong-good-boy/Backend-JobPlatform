@@ -20,7 +20,8 @@ public interface CandidateRepository extends JpaRepository<Candidate, Long> {
     Long gettotalCandidate();
     @Query("select c.user from Candidate c where c.id=:id ")
     User getUserByCandidate(@Param("id") Long id);
-
+    @Query("select c.id from Candidate c where c.user.id=:userId")
+    Long getCandidateIdByUSerId(@Param("userId") Long userId);
     @Query(value = """
         SELECT c.* FROM candidates c
         JOIN (

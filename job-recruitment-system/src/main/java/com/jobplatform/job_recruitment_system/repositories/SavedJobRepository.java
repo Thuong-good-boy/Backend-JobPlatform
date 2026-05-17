@@ -28,8 +28,8 @@ public interface SavedJobRepository extends JpaRepository<SavedJob, Long> {
     @Query("""
     select count(s.id)
     from Job j join  SavedJob s on j.id = s.job.id
-    where j.company.userId = :companyId
+    where j.company.id = :id
 """)
-    Long getTotalJobSave(@Param("companyId") Long companyId);
+    Long getTotalJobSave(@Param("id") Long id);
 
 }

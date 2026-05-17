@@ -15,20 +15,17 @@ import java.util.List;
 
 @Repository
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
-    boolean existsByJobIdAndCvId(Long jobId, Long cvId);
     boolean existsByJobIdAndCv_User_Id(Long jobId, Long userId);
     List<Application> findByCv_User_IdOrderByAppliedAtDesc(Long userId);
-    List<Application> findTop7ByJob_Company_UserIdOrderByAppliedAtDesc(Long userId);
-    List<Application> findByJobId(Long jobId);
-    long countByJob_Company_UserId(Long userId);
-    List<Application> findByJobIdAndStatus(Long jobId, AppStatus status);
+    List<Application> findTop7ByJob_Company_User_IdOrderByAppliedAtDesc(Long userId);
+    long countByJob_Company_User_Id(Long userId);
     @Modifying
     @Query("DELETE FROM Application a WHERE a.job.id = :jobId")
     void deleteByJobId(@Param("jobId") Long jobId);
 
     @Query("""
         select new com.jobplatform.job_recruitment_system.dtos.Response.ApplicationOnlyJobResponse(
-                a.id, a.fullName, a.phone,  a.address , a.status, a.coverLetter,
+                a.id, a.fullName , a.status,
                 a.appliedAt, c.id, c.fileUrl, m.score, m.match_details
                 )
         from Application a left join a.cv c
@@ -39,10 +36,9 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
     List<ApplicationOnlyJobResponse> findListApplicationIncludeMatch(@Param("jobId") Long jobId);
     @Query("""
         select count(a.id)
-        from Job j join Application a on j.id = a.job.id
-        join Company c on j.company.id= c.userId
-        where c.userId = :companyId
-""")
+        from Application a
+        where a.job.company.id = :companyId
+    """)
     Long totalApplications(@Param("companyId") Long companyId);
 
     @Query(value = """
@@ -101,6 +97,7 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
     select count(a.id) from applications a where a.user_id = :userId
 """,nativeQuery = true)
     Integer getCountApply(@Param("userId") Long userId);
-
+    @Query("select count(a.id) from Application a where a.cv.id=:cvId")
+    Long countByCvId(@Param("cvId") Long cvId);
 }
 

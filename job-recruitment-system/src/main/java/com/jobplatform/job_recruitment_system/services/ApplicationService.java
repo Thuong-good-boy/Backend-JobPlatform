@@ -35,13 +35,12 @@ public class  ApplicationService {
     private  final  NotificationService notificationService;
     private  final  UserService userService;
     private  final ApplicationMapper applicationMapper;
-    private  final ChatMessageService chatMessageService;
     private final  ChatRoomService chatRoomService;
-    private  final ChatRoomRepository chatRoomRepository;
-    public void applyForJob(ApplicationRequest request,Long jobId) {
+    private  final CandidateRepository candidateRepository;
+    public void applyForJob(Long jobId) {
         Long  userId= userService.getCurrentUserId();
         Job job = jobRepository.getReferenceById(jobId);
-        Cv cv = cvRepository.findById(request.getCvId())
+        Cv cv = cvRepository.getCvByUserId(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.CV_002));
 
         User user = userRepository.findById(userId)
@@ -51,11 +50,12 @@ public class  ApplicationService {
            throw  new AppException(ErrorCode.NOTPRO_01);
         }
         try {
-        Application app =  applicationMapper.formApplicationRequesttoApplication(request);
+        Application app = new Application();
+        app.setJob(job);
         app.setUser(user);
         app.setCv(cv);
-        app.setJob(job);
-        app.setFullName(request.getFullName());
+        app.setFullName(user.getFullName());
+        app.setStatus(AppStatus.APPLIED);
         applicationRepository.save(app);
 
         NotificationType type = NotificationType.NEW_APPLICATION;
@@ -64,7 +64,7 @@ public class  ApplicationService {
         metadata.put("targetUrl","/company/jobs/detail/" + jobId);
         System.out.println("có vào check 01" );
         notificationService.sendNotification(
-                job.getCompany().getUserId(),
+                job.getCompany().getUser().getId(),
                 userId,
                 type,
                 metadata,
@@ -140,13 +140,15 @@ public class  ApplicationService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_012));
 
         application.setStatus(newStatus);
-        applicationRepository.save(application);
+        Application newApplicationStatus = applicationRepository.save(application);
+        Long CandidateId =  candidateRepository.getCandidateIdByUSerId(newApplicationStatus.getUser().getId());
+        Candidate  candidate = candidateRepository.getReferenceById(CandidateId);
         if(AppStatus.INTERVIEW.equals(newStatus)){
             try {
                 chatRoomService.createRoomIfNotExist(
                         application.getJob().getId(),
-                        application.getJob().getCompany().getUserId(),
-                        application.getUser().getId()
+                        application.getJob().getCompany().getId(),
+                        CandidateId
                 );
             } catch (Exception e) {
                 System.err.println("Lỗi khi tạo phòng chat: " + e.getMessage());
@@ -162,8 +164,8 @@ public class  ApplicationService {
         metadata.put("targetUrl", "/jobs/" + application.getJob().getId());
 
         notificationService.sendNotification(
-                application.getUser().getId(),
-                application.getJob().getCompany().getUserId(),
+                candidate.getUser().getId(),
+                application.getJob().getCompany().getUser().getId(),
                 type,
                 metadata,
                 application.getJob().getTitle()

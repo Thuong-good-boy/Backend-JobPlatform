@@ -4,6 +4,7 @@ import com.jobplatform.job_recruitment_system.dtos.Response.CvsLast3MonthsRespon
 import com.jobplatform.job_recruitment_system.models.Cv;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -53,5 +54,8 @@ public interface CvRepository extends JpaRepository<Cv, Long> {
       order by  m.month_series
 """, nativeQuery = true)
     List<CvsLast3MonthsResponse> getCvsLast3MonthsResponse();
+
+    @Query(value = "select * from cvs where user_id = :userId limit 1", nativeQuery = true)
+    Optional<Cv> getCvByUserId(@Param("userId") Long userId);
 
 }

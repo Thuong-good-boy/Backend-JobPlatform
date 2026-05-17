@@ -14,18 +14,19 @@ import java.util.List;
 
 @Repository
 public interface MatchScoreRepository  extends JpaRepository<MatchScore, MatchScoreId> {
+
     @Query("SELECT new com.jobplatform.job_recruitment_system.dtos.Response.JobRecommendationResponse(ms.job, ms.score, ms.match_details, ms.job.company.companyName) " +
             "FROM MatchScore ms WHERE ms.cv.id = :cvId AND ms.job.status = com.jobplatform.job_recruitment_system.enums.JobStatus.OPEN ORDER BY ms.score DESC")
     Page<JobRecommendationResponse> findRecommendedJobsByCvId(@Param("cvId") Long cvId, Pageable pageable);
 
+    // FIX: Sửa ms.job.company.userId thành ms.job.company.id để trúng vào khóa chính mới
     @Query("SELECT new com.jobplatform.job_recruitment_system.dtos.Response.JobRecommendationResponse(ms.job, ms.score, ms.match_details, ms.job.company.companyName) " +
             "FROM MatchScore ms " +
             "WHERE ms.cv.id = :cvId " +
             "AND ms.job.status = com.jobplatform.job_recruitment_system.enums.JobStatus.OPEN " +
-            "AND ms.job.company.userId = :companyId " +
+            "AND ms.job.company.id = :companyId " +
             "ORDER BY ms.score DESC")
     List<JobRecommendationResponse> findRecommendedJobsByCvIdAndCompanyId(@Param("cvId") Long cvId, @Param("companyId") Long companyId);
-
 
     @Query(value = """
     SELECT ms.* FROM match_scores ms

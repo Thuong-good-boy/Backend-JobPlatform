@@ -10,10 +10,9 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
+
     Slice<ChatMessage> findByRoomIdOrderBySentAtDesc(Long roomId, Pageable pageable);
 
     @Query("SELECT COUNT(m) FROM ChatMessage m WHERE m.room.id = :roomId AND m.senderId != :currentUserId AND m.isRead = false")
@@ -24,10 +23,11 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     @Query("UPDATE ChatMessage m SET m.isRead = true WHERE m.room.id = :roomId AND m.senderId != :currentUserId AND m.isRead = false")
     void markMessagesAsRead(@Param("roomId") Long roomId, @Param("currentUserId") Long currentUserId);
 
-    @Query("SELECT COUNT(m) FROM ChatMessage m WHERE m.room.candidate.id = :userId AND m.senderId != :userId AND m.isRead = false")
+    // FIX: Trỏ đúng vào user.id của Candidate
+    @Query("SELECT COUNT(m) FROM ChatMessage m WHERE m.room.candidate.user.id = :userId AND m.senderId != :userId AND m.isRead = false")
     long countTotalUnreadForCandidate(@Param("userId") Long userId);
 
-    @Query("SELECT COUNT(m) FROM ChatMessage m WHERE m.room.company.userId = :userId AND m.senderId != :userId AND m.isRead = false")
+    // FIX: Trỏ đúng vào user.id của Company thay vì thuộc tính userId không còn tồn tại
+    @Query("SELECT COUNT(m) FROM ChatMessage m WHERE m.room.company.user.id = :userId AND m.senderId != :userId AND m.isRead = false")
     long countTotalUnreadForCompany(@Param("userId") Long userId);
-
 }

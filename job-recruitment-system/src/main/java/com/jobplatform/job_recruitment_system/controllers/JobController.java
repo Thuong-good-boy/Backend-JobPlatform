@@ -1,12 +1,11 @@
 package com.jobplatform.job_recruitment_system.controllers;
 
-import com.jobplatform.job_recruitment_system.dtos.Response.AppliedJobResponse;
-import com.jobplatform.job_recruitment_system.dtos.Response.CompanyJobsByCandidateResponse;
-import com.jobplatform.job_recruitment_system.dtos.Response.ListJobResponse;
-import com.jobplatform.job_recruitment_system.dtos.Response.SavedJobResponse;
+import com.jobplatform.job_recruitment_system.dtos.Response.*;
 import com.jobplatform.job_recruitment_system.dtos.request.ApplicationRequest;
 import com.jobplatform.job_recruitment_system.dtos.request.JobPostRequest;
 import com.jobplatform.job_recruitment_system.enums.JobStatus;
+import com.jobplatform.job_recruitment_system.exceptions.AppException;
+import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
 import com.jobplatform.job_recruitment_system.models.*;
 import com.jobplatform.job_recruitment_system.services.*;
 import jakarta.validation.Valid;
@@ -16,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -29,25 +29,31 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class JobController {
     private final JobService jobService;
-    private final AiMatchingService aiMatchingService;
     private final ApplicationService applicationService;
     private final SaveJobService saveJobService;
     private final UserService userService;
-    private final CvService cvService;
-    private final MatchScoreService matchScoreService;
+    private final  ReportReasonsService reasonsService;
 
     @PostMapping("/create")
     public ResponseEntity<?> createJob(@Valid @RequestBody JobPostRequest request) {
         jobService.postJob(request);
         return ResponseEntity.ok(Map.of("message", "đăng job thành công"));
     }
-
+    @GetMapping("/jobpost")
+    public ResponseEntity<?> getAllJobsPost(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size
+    ) {
+        Slice<Job> jobPro = jobService.getJobsPro(page,size);
+        return ResponseEntity.ok( jobPro);
+    }
     @GetMapping
     public ResponseEntity<?> getAllJobs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "6") int size
     ) {
-        return ResponseEntity.ok(jobService.getJobsForUser(page, size));
+        Slice<Job> job= jobService.getJobsForUser(page, size);
+        return ResponseEntity.ok( job);
     }
 
     @GetMapping("/recommended")
@@ -55,7 +61,8 @@ public class JobController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "6") int size
     ) {
-        return ResponseEntity.ok((jobService.getJobRecommendationResponses(page, size)));
+        Slice<JobRecommendationResponse> sliceJob = jobService.getJobRecommendationResponses(page, size);
+        return ResponseEntity.ok(  sliceJob);
     }
 
     @GetMapping("/company/job")
@@ -80,8 +87,7 @@ public class JobController {
     @GetMapping("/my-company-jobs")
     public ResponseEntity<?> getMyCompanyJobs() {
         try {
-            Long userId = userService.getCurrentUserId();
-            List<ListJobResponse> myJobs = jobService.getJobsByCompanyUserId(userId);
+            List<ListJobResponse> myJobs = jobService.getJobsByCompanyUserId();
             return ResponseEntity.ok(myJobs);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Lỗi khi lấy danh sách việc làm: " + e.getMessage());
@@ -94,15 +100,15 @@ public class JobController {
             Integer countPost= jobService.postJob(jobId);
             return ResponseEntity.ok(countPost);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Lỗi đẩy tin: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Bạn không còn lượt đẩy nào.");
         }
     }
 
 
     @PostMapping("/{jobId}/apply")
-    public ResponseEntity<?> applyJob(@PathVariable @NotNull(message = "JOB_REQUIRED") Long jobId, @Valid @RequestBody ApplicationRequest requestDTO) {
+    public ResponseEntity<?> applyJob(@PathVariable @NotNull(message = "JOB_REQUIRED") Long jobId) {
         try {
-             applicationService.applyForJob(requestDTO, jobId);
+             applicationService.applyForJob(jobId);
             return ResponseEntity.ok("Ứng tuyển thành công!");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -145,8 +151,10 @@ public class JobController {
     }
 
     @GetMapping("/{jobId}")
-    public ResponseEntity<Job> getjob(@PathVariable @NotNull(message = "JOB_REQUIRED") Long jobId) {
-        return jobService.getJobsById(jobId).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> getjob(@PathVariable @NotNull(message = "JOB_REQUIRED") Long jobId) {
+        List<ReportReasons> reportReasonsList = reasonsService.getReportJob();
+        Job job = jobService.getJobsById(jobId).orElseThrow( ()-> new AppException(ErrorCode.JOB_001));
+        return ResponseEntity.ok(Map.of("job", job, "reportReasonsList", reportReasonsList));
     }
 
     @GetMapping("/my-applications")

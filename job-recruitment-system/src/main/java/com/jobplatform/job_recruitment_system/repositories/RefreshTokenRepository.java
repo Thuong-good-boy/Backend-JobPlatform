@@ -12,7 +12,6 @@ import java.util.Optional;
 @Repository
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
 
-    // Tìm kiếm token trong DB xem có tồn tại không
     Optional<RefreshToken> findByToken(String token);
 
     @Modifying

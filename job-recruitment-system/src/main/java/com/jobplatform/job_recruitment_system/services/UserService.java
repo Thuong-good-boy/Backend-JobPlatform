@@ -417,11 +417,12 @@ public class UserService {
     }
     @Transactional
     public  void updateCompany(Long id,CompanyUpdateRequest request){
-        User  user = getUserId(id).orElseThrow(()-> new AppException(ErrorCode.AUTH_008));
+        User  user = userRepository.findByCompanyId(id);
         user.setFullName(request.getFullName());
         userRepository.save(user);
         Company company = companyRepository.getReferenceById(id);
         companyMapper.updateCompany(request, company);
         companyRepository.save(company);
     }
+
 }

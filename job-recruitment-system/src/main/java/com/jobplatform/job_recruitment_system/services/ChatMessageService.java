@@ -10,6 +10,7 @@ import com.jobplatform.job_recruitment_system.mapper.ChatMessageMapper;
 import com.jobplatform.job_recruitment_system.models.ChatMessage;
 import com.jobplatform.job_recruitment_system.models.ChatRoom;
 import com.jobplatform.job_recruitment_system.models.User;
+import com.jobplatform.job_recruitment_system.repositories.CandidateRepository;
 import com.jobplatform.job_recruitment_system.repositories.ChatMessageRepository;
 import com.jobplatform.job_recruitment_system.repositories.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,18 +29,17 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
-    private  final ChatMessageMapper chatMessageMapper;
     private final ChatRoomRepository chatRoomRepository;
     private  final  UserService userService;
     private final SimpMessagingTemplate messagingTemplate;
     private  final  ChatRoomService chatRoomService;
+    private  final CandidateRepository candidateRepository;
     @Transactional
     public void save(Long jobId,ChatMessageRequest  request){
         ChatRoom room = chatRoomRepository.findById(jobId)
                 .orElseThrow(() -> new AppException(ErrorCode.ROOM_001));
         ChatMessage message = new ChatMessage();
         message.setRoom(room);
-        System.out.println("có id ko : " + request.getSenderId());
         message.setSenderId(request.getSenderId());
         message.setRead(false);
         message.setContent(request.getContent());
@@ -61,7 +61,15 @@ public class ChatMessageService {
         Long receiverId= chatRoomService.getReceiverId(chatRoom.getId(),message.getSenderId());
         ChatNotificationReponse reponse = new ChatNotificationReponse();
         reponse.setRoomId(chatRoom.getId());
-        reponse.setSenderName(chatRoom.getCompany().getCompanyName());
+
+        if(request.getRole().equals(Role.COMPANY)){
+
+            reponse.setSenderName(chatRoom.getCompany().getCompanyName());
+
+        }else{
+            User user = userService.getUserId(request.getSenderId()).orElseThrow(()-> new AppException(ErrorCode.AUTH_008));
+            reponse.setSenderName(user.getFullName());
+        }
         reponse.setType("CHAT_PING");
         if (receiverId != null) {
             messagingTemplate.convertAndSend("/topic/chat-notifications/" + receiverId, reponse);

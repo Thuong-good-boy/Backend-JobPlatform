@@ -23,6 +23,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmailAndActiveTrue(String email);
     Optional<User> findByEmail(String email);
     Optional<User> findById(Long userId);
+    @Query("select u from User u join Company c on u.id=c.user.id where c.id =:companyId")
+    User findByCompanyId(@Param("companyId") Long companyId);
     @Query(value = """
     with in_3month as (
     	select generate_series(

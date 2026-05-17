@@ -19,6 +19,7 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,9 +50,13 @@ public class JobService {
     private  final  NotificationRepository notificationRepository;
     private  final MessageSource messageSource;
     private  final SimpMessagingTemplate messagingTemplate;
-    public Page<Job> getJobsForUser(int page, int size) {
+    public Slice<Job> getJobsForUser(int page, int size) {
         Pageable pageable = PageRequest.of(page,size);
             return jobRepository.findAllJobsOpen(pageable);
+    }
+    public Slice<Job> getJobsPro(int page, int size){
+        Pageable pageable = PageRequest.of(page, size);
+        return  jobRepository.fillAllJobsPro(pageable);
     }
     public Page<Job> getJobsForAdmin(int page, int size, String search, String status) {
         Pageable pageable = PageRequest.of(page,size);
@@ -104,11 +109,11 @@ public class JobService {
     public void postJob(JobPostRequest request) {
         Long userId = userService.getCurrentUserId();
         User user = userService.getUserId(userId).orElseThrow(() -> new AppException(ErrorCode.AUTH_008));
+        Long companyId= companyRepository.getCompanyId(userId);
         boolean isPro = userSubscriptionRepository.userispro(userId);
         System.out.println("isPro: " + isPro);
         if(!isPro){
-
-            boolean follow = jobRepository.followNotPro(userId);
+            boolean follow = jobRepository.followNotPro(companyId);
             System.out.println("follow: " + follow);
             if (!follow ){
                 throw  new AppException(ErrorCode.NOTPRO_02);
@@ -117,7 +122,6 @@ public class JobService {
 
         Company companyProfile = companyRepository.findByUser(user)
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_003));
-
         if (!companyProfile.isVerified()) {
             throw new AppException(ErrorCode.COM_005);
         }
@@ -136,7 +140,7 @@ public class JobService {
             job.setSkills(jobSkills);
         }
         Job jobnew= jobRepository.save(job);
-        aiMatchingService.processNewJob(jobnew);
+//        aiMatchingService.processNewJob(jobnew);
         NotificationType type = NotificationType.NEW_JOB_PENDING;
         Locale locale = LocaleContextHolder.getLocale();
         String titleKey ="noti.title."+type.name();
@@ -146,11 +150,11 @@ public class JobService {
         String message= messageSource.getMessage(messageKey, new Object[]{companyProfile.getCompanyName(), jobnew.getTitle()},locale);
         Map<String, Object> metadata= new HashMap<>();
         metadata.put("jobId", job.getId());
-        metadata.put("companyId", companyProfile.getUserId());
+        metadata.put("companyId", companyProfile.getId());
         metadata.put("targetUrl", "/admin/management");
         Notification notification = new Notification();
         notification.setRecipientId(1L);
-        notification.setSenderId(companyProfile.getUserId());
+        notification.setSenderId(companyProfile.getUser().getId());
         notification.setType(type);
         notification.setTitle(title);
         notification.setMessage(message);
@@ -168,7 +172,6 @@ public class JobService {
         Pageable pageable = PageRequest.of(page,size);
         String cleanKey =  (keyword!=null) ? keyword.trim():"";
         return jobRepository.searchJobs(cleanKey,pageable);
-
     }
     public  Job getReferenceById(Long jobid){
         return jobRepository.getReferenceById(jobid);
@@ -184,8 +187,10 @@ public class JobService {
         }
         return  matchScoreRepository.findRecommendedJobsByJobId(jodId,userCv.getId());
     }
-    public List<ListJobResponse> getJobsByCompanyUserId(Long userId) {
-        List<Job> jobList = jobRepository.findByCompanyIdCustom(userId);
+    public List<ListJobResponse> getJobsByCompanyUserId() {
+        Long userId = userService.getCurrentUserId();
+        Long companyId= companyRepository.getCompanyId(userId);
+        List<Job> jobList = jobRepository.findByCompanyIdCustom(companyId);
 
         return jobList.stream().map(job -> {
             ListJobResponse response = jobMapper.fromJobtoListJobResponse(job);
@@ -234,10 +239,10 @@ public class JobService {
         String message= messageSource.getMessage(messageKey, new Object[]{companyProfile.getCompanyName(), jobnew.getTitle()},locale);
         Map<String, Object> metadata= new HashMap<>();
         metadata.put("jobId", job.getId());
-        metadata.put("companyId", companyProfile.getUserId());
+        metadata.put("companyId", companyProfile.getId());
         metadata.put("targetUrl", "/company/jobs");
         Notification notification = new Notification();
-        notification.setRecipientId(companyProfile.getUserId());
+        notification.setRecipientId(companyProfile.getUser().getId());
         notification.setSenderId(1L);
         notification.setType(type);
         notification.setTitle(title);

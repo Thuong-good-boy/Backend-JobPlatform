@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-05-16T05:57:45+0700",
+    date = "2026-05-16T22:14:03+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.6 (Oracle Corporation)"
 )
 @Component
@@ -38,10 +38,7 @@ public class ApplicationMapperImpl implements ApplicationMapper {
         applicationOnlyJobResponse.setCvId( applicationCvId( application ) );
         applicationOnlyJobResponse.setCvUrl( applicationCvFileUrl( application ) );
         applicationOnlyJobResponse.setId( application.getId() );
-        applicationOnlyJobResponse.setPhone( application.getPhone() );
-        applicationOnlyJobResponse.setAddress( application.getAddress() );
         applicationOnlyJobResponse.setStatus( application.getStatus() );
-        applicationOnlyJobResponse.setCoverLetter( application.getCoverLetter() );
 
         return applicationOnlyJobResponse;
     }
@@ -54,10 +51,7 @@ public class ApplicationMapperImpl implements ApplicationMapper {
 
         Application application = new Application();
 
-        application.setCoverLetter( source.getCoverLetter() );
         application.setFullName( source.getFullName() );
-        application.setPhone( source.getPhone() );
-        application.setAddress( source.getAddress() );
 
         return application;
     }

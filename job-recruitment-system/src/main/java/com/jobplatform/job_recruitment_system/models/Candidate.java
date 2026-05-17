@@ -1,6 +1,7 @@
 package com.jobplatform.job_recruitment_system.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -43,4 +44,8 @@ public class Candidate {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private ZonedDateTime updatedAt;
+    @JsonProperty("fullName")
+    public String getFullName() {
+        return this.user != null ? this.user.getFullName() : null;
+    }
 }

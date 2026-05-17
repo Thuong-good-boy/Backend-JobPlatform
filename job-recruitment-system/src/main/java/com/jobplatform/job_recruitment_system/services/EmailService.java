@@ -56,7 +56,7 @@ public class EmailService {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-        helper.setFrom("security@jobplatform.com"); // Đổi sang email bảo mật cho "ngầu"
+        helper.setFrom("security@jobplatform.com");
         helper.setTo(toEmail);
         helper.setSubject("Yêu cầu đặt lại mật khẩu - Job Platform");
 
@@ -109,7 +109,7 @@ public class EmailService {
             mainMessage = "Cảm ơn bạn đã chung tay bảo vệ cộng đồng Job Platform. Chúng tôi đã tiến hành kiểm tra và áp dụng biện pháp xử lý đối với tài khoản vi phạm dựa trên bằng chứng bạn cung cấp.";
         } else {
             subjectText = "[Job Platform] Phản hồi về báo cáo vi phạm của bạn";
-            statusColor = "#e74c3c"; // Màu đỏ
+            statusColor = "#e74c3c";
             statusText = "BÁO CÁO BỊ TỪ CHỐI";
             mainMessage = "Chúng tôi đã xem xét kỹ lưỡng báo cáo của bạn. Tuy nhiên, ở thời điểm hiện tại, chúng tôi chưa có đủ cơ sở hoặc bằng chứng để xác định đây là một vi phạm điều khoản của hệ thống.";
         }
@@ -157,5 +157,139 @@ public class EmailService {
         helper.setText(htmlContent, true);
         mailSender.send(message);
     }
+    public void sendCandidateAccountLockedEmail(String toEmail, String candidateName,
+                                                String reasonTitle, String adminNote) throws MessagingException {
+
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        helper.setFrom("support@jobplatform.com");
+        helper.setTo(toEmail);
+        helper.setSubject("[Job Platform] THÔNG BÁO QUAN TRỌNG: Tài khoản của bạn đã bị khóa");
+
+        String htmlContent =
+                "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);'>"
+
+                        + "<div style='background-color: #fee2e2; padding: 20px; border-bottom: 1px solid #fca5a5; text-align: center;'>"
+                        + "   <h2 style='color: #b91c1c; margin: 0;'>Tài Khoản Đã Bị Khóa</h2>"
+                        + "</div>"
+
+                        + "<div style='padding: 30px 20px; background-color: #ffffff;'>"
+                        + "   <p style='color: #334155; font-size: 16px;'>Xin chào <b>" + candidateName + "</b>,</p>"
+                        + "   <p style='color: #475569; font-size: 15px; line-height: 1.6;'>"
+                        + "     Chúng tôi rất tiếc phải thông báo rằng tài khoản ứng viên của bạn trên Job Platform đã bị tạm khóa do vi phạm Tiêu chuẩn Cộng đồng & Điều khoản Dịch vụ của chúng tôi."
+                        + "   </p>"
+
+                        + "   <div style='background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #ef4444;'>"
+                        + "       <p style='margin: 0 0 10px 0; color: #475569; font-size: 14px;'><b>Lý do vi phạm:</b> <span style='color: #ef4444; font-weight: bold;'>" + reasonTitle + "</span></p>"
+                        + "       <p style='margin: 0; color: #475569; font-size: 14px;'><b>Chi tiết từ Ban Quản Trị:</b> <i>" + (adminNote != null && !adminNote.isEmpty() ? adminNote : "Hồ sơ hoặc hành vi của bạn đã vi phạm quy định của hệ thống.") + "</i></p>"
+                        + "   </div>"
+
+                        + "   <p style='color: #64748b; font-size: 14px; line-height: 1.6;'>"
+                        + "     Việc khóa tài khoản đồng nghĩa với việc bạn không thể đăng nhập, ứng tuyển hoặc tương tác trên nền tảng. "
+                        + "     Nếu bạn cho rằng quyết định này là một sự nhầm lẫn, vui lòng phản hồi lại email này kèm theo các minh chứng để chúng tôi xem xét lại."
+                        + "   </p>"
+                        + "</div>"
+
+                        + "<div style='background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;'>"
+                        + "   <p style='margin: 0; color: #94a3b8; font-size: 12px;'>Đây là email tự động từ hệ thống Job Platform.</p>"
+                        + "   <p style='margin: 5px 0 0 0; color: #94a3b8; font-size: 12px;'>&copy; 2026 Job Platform. Đội ngũ Kiểm duyệt & Bảo mật.</p>"
+                        + "</div>"
+
+                        + "</div>";
+
+        helper.setText(htmlContent, true);
+        mailSender.send(message);
+    }
+    public void sendCompanyAccountLockedEmail(String toEmail, String companyName,
+                                              String reasonTitle, String adminNote) throws MessagingException {
+
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        helper.setFrom("support@jobplatform.com");
+        helper.setTo(toEmail);
+        helper.setSubject("[Job Platform] THÔNG BÁO QUAN TRỌNG: Tài khoản Doanh nghiệp của bạn đã bị đình chỉ");
+
+        String htmlContent =
+                "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);'>"
+
+                        + "<div style='background-color: #fee2e2; padding: 20px; border-bottom: 1px solid #fca5a5; text-align: center;'>"
+                        + "   <h2 style='color: #b91c1c; margin: 0;'>Đình Chỉ Tài Khoản Doanh Nghiệp</h2>"
+                        + "</div>"
+
+                        + "<div style='padding: 30px 20px; background-color: #ffffff;'>"
+                        + "   <p style='color: #334155; font-size: 16px;'>Kính gửi <b>" + companyName + "</b>,</p>"
+                        + "   <p style='color: #475569; font-size: 15px; line-height: 1.6;'>"
+                        + "     Chúng tôi rất tiếc phải thông báo rằng tài khoản nhà tuyển dụng của Quý công ty trên Job Platform đã bị tạm thời đình chỉ. Quyết định này được đưa ra sau khi chúng tôi xác minh các báo cáo vi phạm liên quan đến hoạt động của công ty trên nền tảng."
+                        + "   </p>"
+
+                        + "   <div style='background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #ef4444;'>"
+                        + "       <p style='margin: 0 0 10px 0; color: #475569; font-size: 14px;'><b>Lý do vi phạm:</b> <span style='color: #ef4444; font-weight: bold;'>" + reasonTitle + "</span></p>"
+                        + "       <p style='margin: 0; color: #475569; font-size: 14px;'><b>Chi tiết xử lý từ Ban Quản Trị:</b> <i>" + (adminNote != null && !adminNote.trim().isEmpty() ? adminNote : "Hoạt động hoặc thông tin của công ty không tuân thủ Điều khoản Dịch vụ của hệ thống.") + "</i></p>"
+                        + "   </div>"
+
+                        + "   <p style='color: #64748b; font-size: 14px; line-height: 1.6;'>"
+                        + "     Trong thời gian đình chỉ, toàn bộ tin tuyển dụng của công ty sẽ bị ẩn và Quý công ty không thể truy cập vào hệ thống quản trị. "
+                        + "     Nếu Quý công ty cho rằng đây là một sự nhầm lẫn hoặc cần hỗ trợ làm rõ vấn đề, vui lòng phản hồi lại email này kèm theo các tài liệu/chứng từ liên quan để ban quản trị xem xét."
+                        + "   </p>"
+                        + "</div>"
+
+                        + "<div style='background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;'>"
+                        + "   <p style='margin: 0; color: #94a3b8; font-size: 12px;'>Đây là email tự động từ hệ thống Job Platform.</p>"
+                        + "   <p style='margin: 5px 0 0 0; color: #94a3b8; font-size: 12px;'>&copy; 2026 Job Platform. Đội ngũ Kiểm duyệt chất lượng.</p>"
+                        + "</div>"
+
+                        + "</div>";
+
+        helper.setText(htmlContent, true);
+        mailSender.send(message);
+    }
+    public void sendJobRemovedEmail(String toEmail, String companyName, String jobTitle,
+                                    String reasonTitle, String adminNote) throws MessagingException {
+
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        helper.setFrom("support@jobplatform.com");
+        helper.setTo(toEmail);
+        helper.setSubject("[Job Platform] THÔNG BÁO: Tin tuyển dụng của bạn đã bị gỡ do vi phạm");
+
+        String htmlContent =
+                "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);'>"
+
+                        + "<div style='background-color: #ffedd5; padding: 20px; border-bottom: 1px solid #fdba74; text-align: center;'>"
+                        + "   <h2 style='color: #c2410c; margin: 0;'>Gỡ Tin Tuyển Dụng</h2>"
+                        + "</div>"
+
+                        + "<div style='padding: 30px 20px; background-color: #ffffff;'>"
+                        + "   <p style='color: #334155; font-size: 16px;'>Kính gửi <b>" + companyName + "</b>,</p>"
+                        + "   <p style='color: #475569; font-size: 15px; line-height: 1.6;'>"
+                        + "     Chúng tôi xin thông báo rằng một tin tuyển dụng của Quý công ty trên Job Platform vừa bị buộc phải gỡ bỏ (chuyển sang trạng thái Đóng) do phát hiện vi phạm Tiêu chuẩn Cộng đồng của hệ thống."
+                        + "   </p>"
+
+                        + "   <div style='background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #f97316;'>"
+                        + "       <p style='margin: 0 0 10px 0; color: #475569; font-size: 14px;'><b>Tin tuyển dụng:</b> <span style='color: #1e293b; font-weight: bold;'>" + jobTitle + "</span></p>"
+                        + "       <p style='margin: 0 0 10px 0; color: #475569; font-size: 14px;'><b>Lý do vi phạm:</b> <span style='color: #ea580c; font-weight: bold;'>" + reasonTitle + "</span></p>"
+                        + "       <p style='margin: 0; color: #475569; font-size: 14px;'><b>Ghi chú từ Kiểm duyệt viên:</b> <i>" + (adminNote != null && !adminNote.trim().isEmpty() ? adminNote : "Nội dung tin tuyển dụng không phù hợp với quy định của nền tảng.") + "</i></p>"
+                        + "   </div>"
+
+                        + "   <p style='color: #64748b; font-size: 14px; line-height: 1.6;'>"
+                        + "     Tài khoản doanh nghiệp của Quý công ty vẫn hoạt động bình thường. Tuy nhiên, việc đăng tải nhiều tin vi phạm có thể dẫn đến hình thức xử lý nặng hơn (đình chỉ tài khoản). "
+                        + "     Vui lòng kiểm tra lại nội dung các tin tuyển dụng khác. Nếu Quý công ty có thắc mắc, vui lòng phản hồi lại email này."
+                        + "   </p>"
+                        + "</div>"
+
+                        + "<div style='background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;'>"
+                        + "   <p style='margin: 0; color: #94a3b8; font-size: 12px;'>Đây là email tự động từ hệ thống Job Platform.</p>"
+                        + "   <p style='margin: 5px 0 0 0; color: #94a3b8; font-size: 12px;'>&copy; 2026 Job Platform. Đội ngũ Kiểm duyệt chất lượng.</p>"
+                        + "</div>"
+
+                        + "</div>";
+
+        helper.setText(htmlContent, true);
+        mailSender.send(message);
+    }
+
 
 }

@@ -12,6 +12,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -39,9 +40,16 @@ public class CompanyController {
 
     @PostMapping(value = "/onboarding", consumes = {"multipart/form-data"})
     public ResponseEntity<?> onboardingCompany(
-           @Valid @ModelAttribute CompanyOnboardingRequest request) throws  Exception{
+            @Valid @ModelAttribute CompanyOnboardingRequest request) {
+
+        try {
             companyService.processOnboarding(request);
             return ResponseEntity.ok("Cập nhật hồ sơ công ty thành công!");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Lỗi xử lý: " + e.getMessage());
+        }
     }
     @PostMapping("/update-logo")
     public  void updateLogo(

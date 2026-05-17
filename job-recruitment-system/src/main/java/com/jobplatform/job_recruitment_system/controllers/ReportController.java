@@ -3,11 +3,13 @@ package com.jobplatform.job_recruitment_system.controllers;
 import com.jobplatform.job_recruitment_system.dtos.Response.ReportResponse;
 import com.jobplatform.job_recruitment_system.dtos.request.ReportProcessRequest;
 import com.jobplatform.job_recruitment_system.dtos.request.ReportSubmitRequest;
+import com.jobplatform.job_recruitment_system.exceptions.AppException;
 import com.jobplatform.job_recruitment_system.models.Report;
 import com.jobplatform.job_recruitment_system.services.ReportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -34,9 +36,10 @@ public class ReportController {
         try {
             reportService.creatReport(request);
             return ResponseEntity.ok("Tạo thành công!");
+        }catch (AppException e){
+            return ResponseEntity.badRequest().body(e.getMessage());
         }catch (Exception e){
-            return ResponseEntity.ok("Tạo thất bại");
-
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Tạo thất bại: " + e.getMessage());
         }
 
     }

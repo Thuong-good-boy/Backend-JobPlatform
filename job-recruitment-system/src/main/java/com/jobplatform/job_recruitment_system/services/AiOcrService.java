@@ -1,5 +1,6 @@
 package com.jobplatform.job_recruitment_system.services;
 
+import com.jobplatform.job_recruitment_system.dtos.Response.AiBreakdownResultResponse;
 import com.jobplatform.job_recruitment_system.dtos.Response.MatchResultReponse;
 import com.jobplatform.job_recruitment_system.dtos.Response.OcrResultReponse;
 import com.jobplatform.job_recruitment_system.repositories.SkillRepository;
@@ -94,21 +95,40 @@ public class AiOcrService {
     }
 
     public MatchResultReponse calculateMatchScore(String cvJsonData, String jobDescription) {
-        String prompt = "Bạn là một chuyên gia nhân sự (HR). Hãy đánh giá mức độ phù hợp giữa Thông tin ứng viên (CV) và Yêu cầu công việc (Job Description) dưới đây.\n\n" +
+        String prompt = "Bạn là một chuyên gia nhân sự (HR). Hãy phân tích mức độ phù hợp giữa CV và Yêu cầu công việc (JD).\n\n" +
                 "--- THÔNG TIN CV (JSON) ---\n" + cvJsonData + "\n\n" +
                 "--- YÊU CẦU CÔNG VIỆC ---\n" + jobDescription + "\n\n" +
-                "Yêu cầu:\n" +
-                "1. Chấm điểm phù hợp từ 0.0 đến 100.0 (tiêu chí: kỹ năng, kinh nghiệm, học vấn).\n" +
-                "2. Đưa ra một câu nhận xét ngắn gọn (dưới 30 chữ) giải thích tại sao lại cho điểm số đó.\n" +
-                "3. Trả về DUY NHẤT 1 chuỗi JSON với cấu trúc: {\"score\": 85.5, \"reason\": \"Ứng viên đáp ứng tốt kỹ năng Java nhưng thiếu kinh nghiệm quản lý.\"}";
+                "Yêu cầu đánh giá chi tiết theo tiêu chí:\n" +
+                "1. skillScore: Chấm từ 0.0 đến 100.0 dựa trên mức độ trùng khớp của kỹ năng cứng/mềm.\n" +
+                "2. experienceScore: Chấm từ 0.0 đến 100.0 dựa trên số năm kinh nghiệm và vị trí tương đương.\n" +
+                "3. educationScore: Chấm từ 0.0 đến 100.0 dựa trên bằng cấp, ngành học có đúng yêu cầu không.\n" +
+                "4. reason: Đưa ra nhận xét ngắn gọn dưới 30 chữ.\n" +
+                "Trả về DUY NHẤT 1 chuỗi JSON với cấu trúc: " +
+                "{\"skillScore\": 90.0, \"experienceScore\": 80.0, \"educationScore\": 70.0, \"reason\": \"...\"}";
 
         Map<String, Object> requestBody = Map.of(
                 "model", "openai/gpt-oss-120b",
                 "messages", List.of(Map.of("role", "user", "content", prompt)),
-                "temperature", 0.3
+                "temperature", 0.1
         );
 
-        return callAiAndParseJson(requestBody, MatchResultReponse.class);
+        AiBreakdownResultResponse breakdown = callAiAndParseJson(requestBody, AiBreakdownResultResponse.class);
+
+        double weightSkill = 0.5;
+        double weightExperience = 0.4;
+        double weightEducation = 0.1;
+
+        double finalScore = (breakdown.getSkillScore() * weightSkill) +
+                (breakdown.getExperienceScore() * weightExperience) +
+                (breakdown.getEducationScore() * weightEducation);
+
+        finalScore = Math.round(finalScore * 10.0) / 10.0;
+
+        MatchResultReponse finalResponse = new MatchResultReponse();
+        finalResponse.setScore(finalScore);
+        finalResponse.setReason(breakdown.getReason());
+
+        return finalResponse;
     }
 
 

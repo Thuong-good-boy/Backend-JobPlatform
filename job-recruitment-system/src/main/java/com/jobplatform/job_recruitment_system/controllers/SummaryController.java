@@ -24,7 +24,14 @@ public class SummaryController {
     private final SummaryService summaryService;
     @GetMapping
     public ResponseEntity<?> getSummary(){
-        SummaryReponse reponse = summaryService.getSumary();
+        SummaryReponse reponse= new SummaryReponse();
+        try {
+             reponse = summaryService.getSumary();
+        }catch (Exception e){
+            e.printStackTrace();
+            throw e;
+
+        }
         return  ResponseEntity.ok(Map.of("data",reponse, "message","Lấy dữ liệu thành công"));
     }
     @GetMapping("/7ngay")
@@ -35,26 +42,7 @@ public class SummaryController {
     public  List<RecentApplicationReponse> getRecentApplicationReponse(){
             return  summaryService.getRecentApplicationReponse();
     }
-//    "id": 101,
-//            "companyName": "Tech Asia Corp",
-//            "email": "hr@techasia.vn",
-//            "phone": "0987654321",
-//            "address": "Tầng 3, Tòa nhà ABC, Quận 1, TP.HCM",
-//            "website": "https://techasia.vn",
-//            "logoUrl": "https://...",
-//            "businessLicenseUrl": "https://.../giay-phep.pdf",
-//            "status": "ACTIVE",
-//            "createdAt": "2023-10-15T08:30:00",
-//            // Thêm vài chỉ số để Admin Audit
-//            "metrics": {
-//        "totalJobsPosted": 15,
-//                "totalCvsReceived": 350,
-//                "reportedCount": 2 // Số lần bị ứng viên Report
-//    }
-//    @GetMapping("")
-//    public  ResponseEntity<?> getAllCompany(){
-//
-//    }
+
 
 
 }

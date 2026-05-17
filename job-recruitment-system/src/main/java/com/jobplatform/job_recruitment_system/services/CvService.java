@@ -1,9 +1,13 @@
 package com.jobplatform.job_recruitment_system.services;
 
+import com.cloudinary.Cloudinary;
+import com.jobplatform.job_recruitment_system.config.CloudinaryConfig;
 import com.jobplatform.job_recruitment_system.exceptions.AppException;
 import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
+import com.jobplatform.job_recruitment_system.models.Application;
 import com.jobplatform.job_recruitment_system.models.Cv;
 import com.jobplatform.job_recruitment_system.models.User;
+import com.jobplatform.job_recruitment_system.repositories.ApplicationRepository;
 import com.jobplatform.job_recruitment_system.repositories.CvRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,7 +26,7 @@ public class CvService {
     private final AiOcrService aiOcrService;
     private final AiMatchingService aiMatchingService;
     private  final UserService  userService;
-
+    private  final ApplicationRepository applicationRepository;
     @Transactional
     public Cv uploadAndAnalyze(MultipartFile file) throws Exception {
 
@@ -62,8 +66,17 @@ public class CvService {
         if (!cv.getUser().getId().equals(userId)) {
             throw new AppException(ErrorCode.CV_005);
         }
-
-        cv.setActive(false);
-        cvRepository.save(cv);
+        long applicationCount = applicationRepository.countByCvId(cvId);
+        if (applicationCount == 0) {
+            try {
+                fileUploadService.deleteImage(cv.getFileUrl());
+            } catch (Exception e) {
+                System.err.println("Lỗi khi xóa file trên Cloudinary: " + e.getMessage());
+            }
+            cvRepository.delete(cv);
+        } else {
+            cv.setActive(false);
+            cvRepository.save(cv);
+        }
     }
 }

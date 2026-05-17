@@ -11,10 +11,10 @@ import lombok.ToString;
 public class Company {
 
     @Id
-    @Column(name = "user_id")
-    private Long userId;
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     @OneToOne
-    @MapsId
     @JoinColumn(name = "user_id")
     @JsonIgnore
     @ToString.Exclude

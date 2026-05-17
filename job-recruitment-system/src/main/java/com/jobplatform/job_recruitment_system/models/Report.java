@@ -1,6 +1,7 @@
 package com.jobplatform.job_recruitment_system.models;
 
 import com.jobplatform.job_recruitment_system.enums.ReportStatus;
+import com.jobplatform.job_recruitment_system.enums.TargetType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -26,9 +27,9 @@ public class Report {
     private User reporter;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "report_reason_id", nullable = false)
+    @JoinColumn(name = "report_reason_id")
     private ReportReasons reportReason;
-
+    private String customReason;
     @Column(name = "target_id", nullable = false)
     private Long targetId;
 
@@ -39,9 +40,11 @@ public class Report {
     @Column(nullable = false)
     private ReportStatus status;
 
-    @Column(name = "admin_note", columnDefinition = "TEXT")
+    @Column(name =  "admin_note", columnDefinition = "TEXT")
     private String adminNote;
-
+    @Enumerated(EnumType.STRING)
+    @Column(name = "target_type", nullable = false)
+    private TargetType targetType;
     @OneToMany(
             mappedBy = "report",
             cascade = CascadeType.ALL,

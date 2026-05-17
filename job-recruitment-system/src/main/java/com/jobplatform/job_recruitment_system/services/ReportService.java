@@ -4,8 +4,10 @@ import com.jobplatform.job_recruitment_system.config.CloudinaryConfig;
 import com.jobplatform.job_recruitment_system.dtos.Response.ReportResponse;
 import com.jobplatform.job_recruitment_system.dtos.request.ReportProcessRequest;
 import com.jobplatform.job_recruitment_system.dtos.request.ReportSubmitRequest;
+import com.jobplatform.job_recruitment_system.enums.JobStatus;
 import com.jobplatform.job_recruitment_system.enums.NotificationType;
 import com.jobplatform.job_recruitment_system.enums.ReportStatus;
+import com.jobplatform.job_recruitment_system.enums.TargetType;
 import com.jobplatform.job_recruitment_system.exceptions.AppException;
 import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
 import com.jobplatform.job_recruitment_system.mapper.ReportMapper;
@@ -37,66 +39,107 @@ public class ReportService {
     private  final  UserRepository userRepository;
     private  final CandidateRepository candidateRepository;
     private  final  NotificationService notificationService;
-    public  void creatReport(ReportSubmitRequest request) throws  Exception{
-        Report report = new Report();
-        User user = userService.getUserId(userService.getCurrentUserId()).orElseThrow(()-> new AppException(ErrorCode.AUTH_008));
-        ReportReasons reasons = reportReasonsRepository.findById(request.getReasonId()).orElseThrow(()-> new AppException(ErrorCode.REPORTREASON_01));
-        try {
-        System.out.println("Vào report  đầu ");
-        report.setReporter(user);
-        report.setReportReason(reasons);
-        report.setTargetId(request.getTargetId());
-        report.setDescription(request.getDescription());
-        report.setStatus(ReportStatus.PENDING);
-        repository.save(report);
-        List<ReportEvidence> list = new ArrayList<>();
+    private  final CompanyRepository companyRepository;
+    private  final JobRepository jobRepository;
 
-        if(request.getFiles()!= null && !request.getFiles().isEmpty()){
-            for(MultipartFile file: request.getFiles()){
-                String imageUrl = fileUploadService.uploadFile(file);
-                ReportEvidence reportEvidence = new ReportEvidence();
-                reportEvidence.setImageUrl(imageUrl);
-                reportEvidence.setReport(report);
-                ReportEvidence response= reportEvidenceRepository.save(reportEvidence);
-                list.add(response);
-            }
+    public void creatReport(ReportSubmitRequest request) throws Exception {
+        boolean hasReasonId = request.getReasonId() != null;
+        boolean hasCustomReason = request.getCustomReason() != null && !request.getCustomReason().trim().isEmpty();
+
+        if (!hasReasonId && !hasCustomReason) {
+            throw new AppException(ErrorCode.REPORTREASON_02);
         }
-            report.getEvidences().clear();
+
+        Report report = new Report();
+        User user = userService.getUserId(userService.getCurrentUserId())
+                .orElseThrow(() -> new AppException(ErrorCode.AUTH_008));
+
+        try {
+            System.out.println("Bắt đầu xử lý tạo report...");
+            report.setReporter(user);
+            report.setTargetId(request.getTargetId());
+            report.setDescription(request.getDescription());
+            report.setStatus(ReportStatus.PENDING);
+            if(TargetType.COMPANY.equals(request.getTargettype())){
+                report.setTargetType(TargetType.COMPANY);
+            }else{
+                if(TargetType.CANDIDATE.equals(request.getTargettype())){
+                    report.setTargetType(TargetType.CANDIDATE);
+                }else{
+                    report.setTargetType(TargetType.JOB);
+                }
+
+            }
+            if (hasReasonId) {
+                ReportReasons reasons = reportReasonsRepository.findById(request.getReasonId())
+                        .orElseThrow(() -> new AppException(ErrorCode.REPORTREASON_01));
+                report.setReportReason(reasons);
+            }
+
+            if (hasCustomReason) {
+                report.setCustomReason(request.getCustomReason().trim());
+            }
+
+            repository.save(report);
+
+            List<ReportEvidence> list = new ArrayList<>();
+            if (request.getFiles() != null && !request.getFiles().isEmpty()) {
+                for (MultipartFile file : request.getFiles()) {
+                    String imageUrl = fileUploadService.uploadFile(file);
+                    ReportEvidence reportEvidence = new ReportEvidence();
+                    reportEvidence.setImageUrl(imageUrl);
+                    reportEvidence.setReport(report);
+                    ReportEvidence response = reportEvidenceRepository.save(reportEvidence);
+                    list.add(response);
+                }
+            }
+
+            if (report.getEvidences() == null) {
+                report.setEvidences(new ArrayList<>());
+            } else {
+                report.getEvidences().clear();
+            }
             report.getEvidences().addAll(list);
-        Report savedReport=  repository.save(report);
 
-        NotificationType type= NotificationType.NEW_REPORT;
-        Map<String, Object> metadata= new HashMap<>();
-        metadata.put("reportId", savedReport.getId());
-        metadata.put("targetId", savedReport.getTargetId());
-        metadata.put("targetUrl", "/admin/reports");
-        Long a = 1L;
-        notificationService.sendNotification(
-                a,
-                user.getId(),
-                type,
-                metadata,
-                user.getEmail(),
-                savedReport.getTargetId(),
-                savedReport.getReportReason().getTitle()
+            Report savedReport = repository.save(report);
 
-        );
+            NotificationType type = NotificationType.NEW_REPORT;
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("reportId", savedReport.getId());
+            metadata.put("targetId", savedReport.getTargetId());
+            metadata.put("targetUrl", "/admin/reports");
+
+            String notificationTitle = hasReasonId ? savedReport.getReportReason().getTitle() : savedReport.getCustomReason();
+
+            Long adminId = 1L;
+            notificationService.sendNotification(
+                    adminId,
+                    user.getId(),
+                    type,
+                    metadata,
+                    user.getEmail(),
+                    savedReport.getTargetId(),
+                    notificationTitle
+            );
+
         } catch (Exception e) {
             System.err.println("LỖI TẠI CREAT-REPORT: " + e.getMessage());
             e.printStackTrace();
-            throw e; // Ném ngược ra để Controller bắt được lỗi
+            throw e;
         }
-
     }
     public Page<ReportResponse> getRepost(int page, int size){
         Pageable pageable = PageRequest.of(page,size);
-        Page<Report> reportPage = repository.findAll(pageable);
+        Page<Report> reportPage = repository.findAllByCreatedAtDesc(pageable);
         Page<ReportResponse> reportResponses = reportPage.map(
                 report -> {
                     ReportResponse dto = mapper.fromentity(report);
                     if(report.getReportReason() != null){
-                        dto.setReasonTitle(report.getReportReason().getTitle());
+                        dto.setReasonTitle(report.getReportReason().getTitle()  );
+                    }else{
+                        dto.setReasonTitle(report.getCustomReason() );
                     }
+
                     List<String> images= report.getEvidences().stream().map(
                             ReportEvidence :: getImageUrl
                     ).toList();
@@ -110,32 +153,79 @@ public class ReportService {
         Report report = repository.findById(id).orElseThrow(()-> new AppException(ErrorCode.REPORT_01));
         report.setStatus(request.getStatus());
         report.setAdminNote(request.getAdminNote());
-        repository.save(report);
-        String targetTypeStr = (report.getReportReason().getTargetType().name().equals("CANDIDATE"))
-                ? "Ứng viên" : "Nhà Tuyển Dụng";
+        System.out.println("note Admin : " + request.getAdminNote());
+        Report newReport= repository.save(report);
         try {
             emailService.sendReportFeedbackEmail(
-                    report.getReporter().getEmail(),
-                    report.getReporter().getFullName(),
-                    report.getId(),
-                    targetTypeStr,
-                    report.getReportReason().getTitle(),
-                    request.getStatus(),
-                    request.getAdminNote()
+                    newReport.getReporter().getEmail(),
+                    newReport.getReporter().getFullName(),
+                    newReport.getId(),
+                    newReport.getTargetType().toString(),
+                    newReport.getReportReason().getTitle(),
+                    newReport.getStatus(),
+                    newReport.getAdminNote()
             );
         } catch (Exception e) {
             System.err.println("Lỗi gửi mail phản hồi báo cáo: " + e.getMessage());
         }
 
         if (request.getStatus() == ReportStatus.RESOLVED) {
-                if (targetTypeStr.equals("Ứng viên")){
-                    User user  = candidateRepository.getUserByCandidate(report.getTargetId());
+            String reasonTitle = (newReport.getReportReason() == null)
+                    ? newReport.getCustomReason()
+                    : newReport.getReportReason().getTitle();
+                if (newReport.getTargetType() == TargetType.CANDIDATE){
+                    Candidate candidate = candidateRepository.getReferenceById(report.getTargetId());
+                    User user  = candidate.getUser();
                     user.setActive(false);
                     userRepository.save(user);
+                    try {
+                        emailService.sendCandidateAccountLockedEmail(
+                                user.getEmail(),
+                                user.getFullName(),
+                                reasonTitle,
+                                newReport.getAdminNote()
+                        );
+                    }catch (Exception e){
+                        System.err.println("Lỗi gửi mail phản hồi báo cáo cho ứng viên : " + e.getMessage());
+
+                    }
+
                 }else{
-                    User user = userService.getReferenceById(report.getTargetId());
-                    user.setActive(false);
-                    userRepository.save(user);
+                    if (newReport.getTargetType() == TargetType.COMPANY){
+                        Company company= companyRepository.findById(report.getTargetId()).orElseThrow(()-> new AppException(ErrorCode.COM_001));
+                        User user = company.getUser();
+                        user.setActive(false);
+                        userRepository.save(user);
+                        try {
+                            emailService.sendCompanyAccountLockedEmail(
+                                    user.getEmail(),
+                                    company.getCompanyName(),
+                                    reasonTitle,
+                                    report.getAdminNote()
+                            );
+                        }catch (Exception e){
+                            System.err.println("Lỗi gửi mail phản hồi báo cáo cho company : " + e.getMessage());
+                        }
+                    }else{
+                        Job job = jobRepository.getReferenceById(report.getTargetId());
+                        job.setStatus(JobStatus.CLOSED);
+                        jobRepository.save(job);
+                        Company company = job.getCompany();
+                        User user = company.getUser();
+                        try {
+                            emailService.sendJobRemovedEmail(
+                                    user.getEmail(),
+                                    company.getCompanyName(),
+                                    job.getTitle(),
+                                    reasonTitle,
+                                    report.getAdminNote()
+                            );
+                        }catch (Exception e){
+                            System.err.println("Lỗi gửi mail phản hồi báo cáo cho job : " + e.getMessage());
+
+                        }
+                    }
+
                 }
             return "Đã XÁC NHẬN vi phạm, xử lý tài khoản & gửi email cho người tố cáo!";
 

@@ -63,6 +63,7 @@ public class CandidateController {
          @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "6") int size
     ) {
+        System.out.println("company o: "+  companyId);
         Page<Job> list = jobService.getalljobforcompany(companyId, page, size);
         Company company = companyService.getCompanyById(companyId);
         List<ReportReasons> reportReasonsList = reasonsService.getReportCompany();

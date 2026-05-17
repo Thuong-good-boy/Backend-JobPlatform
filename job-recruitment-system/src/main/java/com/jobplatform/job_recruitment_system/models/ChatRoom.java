@@ -29,7 +29,7 @@ public class ChatRoom {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "candidate_id", nullable = false)
-    private User candidate;
+    private Candidate candidate;
 
 
     @Column(name = "created_at")

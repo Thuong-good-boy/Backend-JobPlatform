@@ -15,10 +15,7 @@ import java.time.LocalDateTime;
 public class ApplicationOnlyJobResponse {
     private Long id;
     private String fullname;
-    private String phone;
-    private String address;
     private AppStatus status;
-    private String coverLetter;
     @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
     private LocalDateTime appliedAt;
     private Long cvId;

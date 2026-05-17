@@ -29,7 +29,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Modifying
     @Transactional
     @Query("update Notification set isRead = true where recipientId =:userId")
-    void markAllAsRead(@Param("usetId") Long userId);
+    void markAllAsRead(@Param("userId") Long userId);
 
 
 }

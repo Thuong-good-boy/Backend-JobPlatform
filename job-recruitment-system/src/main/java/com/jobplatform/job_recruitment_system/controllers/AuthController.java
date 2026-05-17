@@ -62,6 +62,10 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+    @GetMapping("role")
+    public ResponseEntity<?> getRole(){
+        return ResponseEntity.ok(userService.getCurrentUserRode());
+    }
 
     @PostMapping("/verify")
     public ResponseEntity<?> verify(@Valid @RequestBody VerifyOtpRequest request) {

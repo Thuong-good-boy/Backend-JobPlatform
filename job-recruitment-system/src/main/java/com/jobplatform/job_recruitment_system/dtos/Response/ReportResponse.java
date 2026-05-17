@@ -1,6 +1,7 @@
 package com.jobplatform.job_recruitment_system.dtos.Response;
 
 import com.jobplatform.job_recruitment_system.enums.ReportStatus;
+import com.jobplatform.job_recruitment_system.enums.TargetType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,11 +16,9 @@ public class ReportResponse {
         private Long id;
         private String reporterName;
         private String reporterEmail;
-
         private String reasonTitle;
-
         private Long targetId;
-
+        private TargetType targetType;
         private String description;
         private List<String> evidenceImages;
 

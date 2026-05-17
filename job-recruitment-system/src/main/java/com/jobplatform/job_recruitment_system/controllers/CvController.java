@@ -39,7 +39,5 @@ public class CvController {
     public ResponseEntity<?> delete(@PathVariable Long id) {
             cvService.softDelete(id);
             return ResponseEntity.ok(Map.of("message", "Đã xóa hồ sơ thành công"));
-
-
     }
 }

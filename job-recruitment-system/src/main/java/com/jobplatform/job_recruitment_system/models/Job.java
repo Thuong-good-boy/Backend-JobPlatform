@@ -41,15 +41,14 @@ public class Job {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "is_trending")
+    @Column(name = "is_pinning")
     private Boolean isTrending;
 
-    @Column(name = "trending_until")
+    @Column(name = "pinning_until")
     private LocalDateTime trendingUntil;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id", nullable = false)
-    @JsonIgnoreProperties({"user", "hibernateLazyInitializer", "handler"}) // Ẩn user ngược lại để tránh loop
     private Company company;
 
     @ManyToMany(fetch = FetchType.LAZY)

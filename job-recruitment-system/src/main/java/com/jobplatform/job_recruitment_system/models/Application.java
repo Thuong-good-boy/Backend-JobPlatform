@@ -38,18 +38,10 @@ public class Application {
     @Enumerated(EnumType.STRING)
     private AppStatus status = AppStatus.APPLIED;
 
-    @Column(columnDefinition = "TEXT")
-    private String coverLetter;
-
     @CreationTimestamp
     private LocalDateTime appliedAt;
 
     @Column(name = "fullname", length = 100)
     private String fullName;
 
-    @Column(length = 15)
-    private String phone;
-
-    @Column(columnDefinition = "TEXT")
-    private String address;
 }

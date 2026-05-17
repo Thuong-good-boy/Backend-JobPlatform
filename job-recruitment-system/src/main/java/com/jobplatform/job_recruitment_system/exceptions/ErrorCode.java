@@ -58,6 +58,7 @@ public enum ErrorCode {
     GPKD_001("Xác thực giấy kinh doanh bằng ai thành công!", HttpStatus.OK),
     GPKD_002("Xác thực giấy kinh doanh bằng ai thất bại!",HttpStatus.BAD_GATEWAY),
     GPKD_003("Lỗi trong quá trình quét AI",HttpStatus.BAD_GATEWAY),
+    GPKD_004("Mã số thuế trích xuất từ giấy phép không tồn tại trên hệ thống dữ liệu Thuế!", HttpStatus.BAD_REQUEST),
     // 6. Job Application Errors
     APP_001("Không tìm thấy đơn ứng tuyển!", HttpStatus.NOT_FOUND),
     APP_002("Không tìm thấy hồ sơ ứng tuyển này", HttpStatus.NOT_FOUND),
@@ -95,6 +96,7 @@ public enum ErrorCode {
     PACKAGE_01("Không tìm thầy package",HttpStatus.NOT_FOUND),
 
     REPORTREASON_01("Không tìm thấy ReportReason này!",HttpStatus.NOT_FOUND),
+    REPORTREASON_02("Vui lòng cung cấp lý do báo cáo hợp lệ!",HttpStatus.BAD_REQUEST),
     REPORT_01("Không tìm thấy report này!",HttpStatus.NOT_FOUND)
     ;
 

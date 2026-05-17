@@ -8,20 +8,21 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
-    @Query("select c from ChatRoom c where c.job.id = :jobId And c.company.userId=:companyId and  c.candidate.id = :candidateId")
-   Optional<ChatRoom> findByJobIdAndCompanyIdAndCandidateId(@Param("jobId") Long jobId,@Param("companyId")  Long companyId,@Param("candidateId")  Long candidateId);
-    @Query("SELECT cr FROM ChatRoom cr WHERE cr.company.id = :userId OR cr.candidate.id = :userId")
+
+    @Query("select c from ChatRoom c where c.job.id = :jobId AND c.company.id = :companyId AND c.candidate.id = :candidateId")
+    Optional<ChatRoom> findByJobIdAndCompanyIdAndCandidateId(@Param("jobId") Long jobId, @Param("companyId") Long companyId, @Param("candidateId") Long candidateId);
+
+    @Query("SELECT cr FROM ChatRoom cr WHERE cr.company.user.id = :userId OR cr.candidate.user.id = :userId")
     Page<ChatRoom> findUserChatRooms(@Param("userId") Long userId, Pageable pageable);
-    @Query("select c from ChatRoom c where c.candidate.id = :userId")
-    Page<ChatRoom> findByCandidateId(@Param("userId") Long userId, Pageable pageable);
 
-    @Query("select c from ChatRoom c where c.company.userId = :companyId")
+    @Query("select c from ChatRoom c where c.candidate.user.id = :userId")
+    Page<ChatRoom> findByCandidateUserId(@Param("userId") Long userId, Pageable pageable);
+
+    @Query("select c from ChatRoom c where c.company.id = :companyId")
     Page<ChatRoom> findByCompanyId(@Param("companyId") Long companyId, Pageable pageable);
-
 
 }

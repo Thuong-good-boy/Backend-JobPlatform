@@ -38,14 +38,14 @@ public class AiMatchingService {
                 skillList.add("\""+skillNode.asText()+"\"");
             }
             String searchQuery = String.join("OR",skillList);
-            log.info("🔍 Từ khóa đẩy xuống Postgres: " + searchQuery);
+            log.info(" Từ khóa đẩy xuống Postgres: " + searchQuery);
             List<Job> top10Jobs = jobRepository.findTop10MatchingJob(searchQuery);
             for (Job job : top10Jobs) {
                 try {
                     calculateAndSave(cv, job);
                     Thread.sleep(5000);
                 } catch (Exception e) {
-                    log.error("❌ Lỗi AI Matching tại Job {}: {}", job.getId(), e.getMessage());
+                    log.error(" Lỗi AI Matching tại Job {}: {}", job.getId(), e.getMessage());
                 }
             }
         } catch (Exception e) {
@@ -102,15 +102,12 @@ public class AiMatchingService {
 
         for (Cv cv : allCvs) {
             for (Job job : allJobs) {
-                // TẠO KHÓA CHÍNH ĐỂ KIỂM TRA
                 MatchScoreId id = new MatchScoreId(job.getId(), cv.getId());
-
-                // NẾU CHƯ  A CÓ ĐIỂM THÌ MỚI GỌI AI
                 if (!matchScoreRepository.existsById(id)) {
-                    calculateAndSave(cv, job); // Hàm bạn đã viết ở bước trước
+                    calculateAndSave(cv, job);
                     count++;
                 } else {
-                    skipped++; // Có rồi thì bỏ qua
+                    skipped++;
                 }
             }
         }

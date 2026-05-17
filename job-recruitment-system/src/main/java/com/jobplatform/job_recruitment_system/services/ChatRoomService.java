@@ -14,65 +14,75 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-
 @Service
 @RequiredArgsConstructor
 public class ChatRoomService {
-    private  final ChatRoomRepository chatRoomRepository;
-    private  final  UserService userService;
-    private  final JobRepository jobRepository;
-    private  final CompanyService companyService;
+    private final ChatRoomRepository chatRoomRepository;
+    private final UserService userService;
+    private final JobRepository jobRepository;
+    private final CompanyService companyService;
+    private final CandidateRepository candidateRepository;
+    private final ChatMessageRepository chatMessageRepository;
+    private final CompanyRepository companyRepository; // Thêm repo này để lấy ID thực
 
-    private  final ChatMessageRepository chatMessageRepository;
-    public Optional<ChatRoom> findById(Long roomid){
-        return  chatRoomRepository.findById(roomid);
+    public Optional<ChatRoom> findById(Long roomid) {
+        return chatRoomRepository.findById(roomid);
     }
-    public Slice<ChatRoom> findByCandidateId(int page , int size){
 
-        Long userId= userService.getCurrentUserId();
+    public Slice<ChatRoom> findByCandidateId(int page, int size) {
+        Long userId = userService.getCurrentUserId();
         Pageable pageable = PageRequest.of(page, size, Sort.by("lastMessageAt").descending());
-        Slice<ChatRoom>  chatRooms= chatRoomRepository.findByCandidateId(userId, pageable);
-        chatRooms.getContent().forEach(chatRoom -> {
-            Long aLong = chatMessageRepository.countUnreadMessages(chatRoom.getId(),userId);
-            chatRoom.setUnreadCount(aLong);
-        });
-        return  chatRooms;
+        Slice<ChatRoom> chatRooms = chatRoomRepository.findByCandidateUserId(userId, pageable);
 
+        chatRooms.getContent().forEach(chatRoom -> {
+            Long unread = chatMessageRepository.countUnreadMessages(chatRoom.getId(), userId);
+            chatRoom.setUnreadCount(unread);
+        });
+        return chatRooms;
     }
-    public  Page<ChatRoom> findByCompanyId(int page , int size){
-        Long companyId = userService.getCurrentUserId();
+
+    public Page<ChatRoom> findByCompanyId(int page, int size) {
+        Long userId = userService.getCurrentUserId();
+        Long realCompanyId = companyRepository.findByUser_Id(userId)
+                .map(com -> com.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_012)); // Hoặc error code tương ứng
+
         Pageable pageable = PageRequest.of(page, size);
-        return  chatRoomRepository.findByCompanyId(companyId, pageable);
+        return chatRoomRepository.findByCompanyId(realCompanyId, pageable);
     }
-    public void createRoomIfNotExist(Long jobId, Long companyId, Long candidateId){
-        ChatRoom chatRoom= chatRoomRepository.findByJobIdAndCompanyIdAndCandidateId(jobId, companyId, candidateId).orElse(null);
-        if(chatRoom== null){
+
+    public void createRoomIfNotExist(Long jobId, Long companyId, Long candidateId) {
+        // Hàm này nhận vào ID thực của Company và Candidate là đúng với Database mới
+        ChatRoom chatRoom = chatRoomRepository.findByJobIdAndCompanyIdAndCandidateId(jobId, companyId, candidateId).orElse(null);
+        if (chatRoom == null) {
             ChatRoom newRoom = new ChatRoom();
             newRoom.setJob(jobRepository.getReferenceById(jobId));
             newRoom.setCompany(companyService.getCompanyById(companyId));
-            User user = userService.getReferenceById(candidateId);
-            newRoom.setCandidate(userService.getReferenceById(candidateId));
+            newRoom.setCandidate(candidateRepository.getReferenceById(candidateId));
             chatRoomRepository.save(newRoom);
         }
     }
-    public  long getTotalUnreadCount(){
+
+    public long getTotalUnreadCount() {
         Long userId = userService.getCurrentUserId();
         User user = userService.getReferenceById(userId);
-        if(Role.CANDIDATE.equals(user.getRole())){
-            return   chatMessageRepository.countTotalUnreadForCandidate(userId);
-        }else{
-            return  chatMessageRepository.countTotalUnreadForCompany(userId);
-        }
-    }
-    public Long getReceiverId(Long roomId, Long senderId) {
-        ChatRoom room = chatRoomRepository.findById(roomId).orElseThrow(()-> new AppException(ErrorCode.ROOM_001));
-        Long candidateId = room.getCandidate().getId();
-        Long companyId = room.getCompany().getUserId();
-        if (senderId.equals(candidateId)) {
-            return companyId;
+        if (Role.CANDIDATE.equals(user.getRole())) {
+            return chatMessageRepository.countTotalUnreadForCandidate(userId);
         } else {
-            return candidateId;
+            return chatMessageRepository.countTotalUnreadForCompany(userId);
         }
     }
 
+    public Long getReceiverId(Long roomId, Long senderId) {
+        ChatRoom room = chatRoomRepository.findById(roomId).orElseThrow(() -> new AppException(ErrorCode.ROOM_001));
+
+        Long candidateUserId = room.getCandidate().getUser().getId();
+        Long companyUserId = room.getCompany().getUser().getId();
+
+        if (senderId.equals(candidateUserId)) {
+            return companyUserId;
+        } else {
+            return candidateUserId;
+        }
+    }
 }
