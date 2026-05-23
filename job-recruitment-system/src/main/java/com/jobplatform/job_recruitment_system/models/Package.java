@@ -38,5 +38,9 @@ public class Package {
      @CreationTimestamp
      @Column(name = "created_at", updatable = false)
      private LocalDateTime createAt;
+     @Column(name = "cv_view_limit")
+     private Integer cvViewLimit;
+        @Column(name = "points_granted")
+        private Integer pointsGranted = 0;
 
 }

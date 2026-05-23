@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // Lưu ý import đúng cái này
 import org.springframework.web.client.RestTemplate;
@@ -38,6 +39,7 @@ public class CompanyService {
      private final CompanyMapper companyMapper;
     private  final ObjectMapper objectMapper = new ObjectMapper();
     private  final CandidateRepository candidateRepository;
+    private  final UserSubscriptionRepository userSubscriptionRepository;
     @Transactional
     public void processOnboarding(CompanyOnboardingRequest request) throws Exception {
         Long userId = userService.getCurrentUserId();
@@ -74,7 +76,7 @@ public class CompanyService {
 
             RestTemplate restTemplate = new RestTemplate();
             String vietQrUrl = "https://api.vietqr.io/v2/business/" + taxCode;
-            System.out.println("Lấy dữ liệu: "+ vietQrUrl);
+
             VietQrResponse qrResponse = restTemplate.getForObject(vietQrUrl, VietQrResponse.class);
 
             if (qrResponse == null || !"00".equals(qrResponse.getCode()) || qrResponse.getData() == null) {
@@ -91,8 +93,8 @@ public class CompanyService {
             String licenseUrl = fileUploadService.uploadFile(request.getLicenseImage());
             company.setLicenseImageUrl(licenseUrl);
 
-            if (request.getWebsite() != null && !request.getWebsite().isBlank()) {
-                String domain = request.getWebsite()
+            if (ocrResultReponse.getWebsite() != null && !ocrResultReponse.getWebsite().isBlank()) {
+                String domain = ocrResultReponse.getWebsite()
                         .replace("https://", "")
                         .replace("http://", "")
                         .replace("www.", "")
@@ -167,20 +169,15 @@ public class CompanyService {
             tempLicenseUrl = fileUploadService.uploadFile(licenseImage);
             OcrResultReponse ocrResultReponse = aiOcrService.extractCompanyInfo(licenseImage);
 
-            if (ocrResultReponse == null || ocrResultReponse.getTaxCode() == null || ocrResultReponse.getCompanyName() == null) {
+            if (ocrResultReponse == null || ocrResultReponse.getTaxCode() == null ) {
                 throw new AppException(ErrorCode.COM_003);
             }
-
-            String inputName = normalizeString(company.getCompanyName());
-            String aiName = normalizeString(ocrResultReponse.getCompanyName());
-
             String currentTax = company.getTaxCode() != null ? company.getTaxCode().trim() : "";
             String aiTax = ocrResultReponse.getTaxCode().trim();
             System.out.println();
             boolean isTaxMatch = currentTax.equals(aiTax);
-            boolean isNameMatch = aiName.contains(inputName) || inputName.contains(aiName);
 
-            if (isTaxMatch && isNameMatch) {
+            if (isTaxMatch ) {
                 company.setVerified(true);
                 companyRepository.save(company);
 
@@ -199,14 +196,16 @@ public class CompanyService {
         Company company = companyRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.COM_001));
         CompanyProfileResponse profile = companyMapper.toProfileResponse(company);
+        profile.setProEnd(userSubscriptionRepository.getProEnd(userId));
         return profile;
     }
     public List<TopCompanyResponse> getTopCompanies() {
         return companyRepository.findTopCompaniesByJobCount();
     }
 
-    public List<TopCompanyResponse> searchCompanies(String keyword) {
-        return companyRepository.searchCompaniesWithJobCount(keyword);
+    public Slice<TopCompanyResponse> searchCompanies(String keyword, int page, int  size) {
+        Pageable  pageable = PageRequest.of(page,size);
+        return companyRepository.searchCompaniesWithJobCount(pageable,keyword);
     }
     public  void postLogo(MultipartFile logo){
         Long userId = userService.getCurrentUserId();

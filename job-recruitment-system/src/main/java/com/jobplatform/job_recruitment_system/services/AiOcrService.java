@@ -14,6 +14,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -45,10 +47,30 @@ public class AiOcrService {
         String base64Image = Base64.getEncoder().encodeToString(file.getBytes());
         String dataUrl = "data:" + file.getContentType() + ";base64," + base64Image;
 
-        String prompt = "Bạn là hệ thống đọc dữ liệu giấy tờ doanh nghiệp Việt Nam. Hãy trích xuất thông tin từ ảnh này:\n" +
-                "1. 'taxCode': Tìm dãy số cạnh dòng chữ 'Mã số doanh nghiệp' HOẶC 'Mã số thuế'. (Lưu ý: Mã số doanh nghiệp chính là Mã số thuế).\n" +
-                "2. 'companyName': Tìm tên công ty tiếng Việt đầy đủ  tên doanh nghiệp.\n" +
-                "Yêu cầu: Trả về 1 JSON duy nhất: {\"taxCode\": \"...\", \"companyName\": \"...\"}. Nếu không tìm thấy, trả về null.";
+        String prompt = "Bạn là hệ thống OCR đọc giấy chứng nhận đăng ký doanh nghiệp Việt Nam.\n" +
+                "Nhiệm vụ: chỉ trích xuất MÃ SỐ THUẾ và WEBSITE từ ảnh.\n\n" +
+
+                "1. 'taxCode':\n" +
+                "- Tìm dãy số cạnh các nhãn:\n" +
+                "  + 'Mã số doanh nghiệp'\n" +
+                "  + 'Mã số thuế'\n" +
+                "- Chỉ lấy phần số.\n\n" +
+
+                "2. 'website':\n" +
+                "- Chỉ lấy WEBSITE của doanh nghiệp.\n" +
+                "- Ví dụ hợp lệ:\n" +
+                "  + abc.com.vn\n" +
+                "  + www.abc.vn\n" +
+                "- KHÔNG lấy email.\n" +
+                "- Nếu là email như abc@gmail.com thì bỏ qua.\n" +
+                "- Nếu không có website thì trả về null.\n\n" +
+
+                "Yêu cầu bắt buộc:\n" +
+                "- Chỉ trả về DUY NHẤT 1 JSON hợp lệ.\n" +
+                "- Không giải thích.\n" +
+                "- Format:\n" +
+                "{\"taxCode\":\"...\",\"website\":\"...\"}\n" +
+                "- Nếu không tìm thấy thì trả về null.";
 
         Map<String, Object> requestBody = Map.of(
                 "model", "google/gemini-2.0-flash-001",
@@ -112,6 +134,7 @@ public class AiOcrService {
                 "temperature", 0.1
         );
 
+
         AiBreakdownResultResponse breakdown = callAiAndParseJson(requestBody, AiBreakdownResultResponse.class);
 
         double weightSkill = 0.5;
@@ -130,7 +153,96 @@ public class AiOcrService {
 
         return finalResponse;
     }
+    public String evaluateCvFromUrl(String fileUrl) throws IOException {
+        if (fileUrl.contains("cloudinary.com") && fileUrl.endsWith(".pdf")) {
+            fileUrl = fileUrl.replace(".pdf", ".jpg");
+        }
 
+        byte[] fileBytes;
+        URL url = new URL(fileUrl);
+        try (InputStream in = url.openStream()) {
+            fileBytes = in.readAllBytes();
+        }
+
+        String mimeType = fileUrl.endsWith(".pdf") ? "application/pdf" : "image/jpeg";
+        String base64Image = Base64.getEncoder().encodeToString(fileBytes);
+        String dataUrl = "data:" + mimeType + ";base64," + base64Image;
+
+        String prompt = "Bạn là một Headhunter kiêm chuyên gia thiết kế CV. Hãy nhìn vào hình ảnh CV này và soi thật kỹ.\n" +
+                "Đánh giá chi tiết hình thức (bố cục lề, màu sắc, font chữ lớn/nhỏ, lỗi chính tả/ngữ pháp) và nội dung.\n" +
+                "Trả về kết quả dưới dạng JSON sau:\n" +
+                "{\n" +
+                "  \"pros\": [\"Điểm mạnh 1\", \"Điểm mạnh 2\"],\n" +
+                "  \"cons\": [\"Điểm yếu 1 (VD: Cỡ chữ quá nhỏ, sai chính tả ở dòng X, màu nhạt...)\", \"Điểm yếu 2\"],\n" +
+                "  \"suggestions\": [\"Gợi ý 1 (VD: Nên đổi sang font Serif, canh lề lại...)\", \"Gợi ý 2\"]\n" +
+                "}\n" +
+                "YÊU CẦU QUAN TRỌNG: Chỉ trả về đúng JSON hợp lệ, không bọc trong Markdown, không giải thích thêm.";
+
+        Map<String, Object> requestBody = Map.of(
+                "model", "google/gemini-2.0-flash-001",
+                "messages", List.of(
+                        Map.of("role", "user", "content", List.of(
+                                Map.of("type", "text", "text", prompt),
+                                Map.of("type", "image_url", "image_url", Map.of("url", dataUrl))
+                        ))
+                )
+        );
+
+        Map<String, Object> response = sendRequestToOpenRouter(requestBody);
+        return extractJsonFromResponse(response);
+    }
+    public String extractForReactiveResume(MultipartFile file) throws IOException {
+        String base64Image = Base64.getEncoder().encodeToString(file.getBytes());
+        String dataUrl = "data:" + file.getContentType() + ";base64," + base64Image;
+
+            String prompt = "Bạn là chuyên gia nhân sự. Hãy trích xuất toàn bộ thông tin từ CV sau và định dạng chuẩn theo cấu trúc JSON của Reactive Resume v4.\n" +
+                "Cấu trúc JSON yêu cầu tối thiểu như sau (nếu CV không có thông tin thì để mảng rỗng [] hoặc chuỗi rỗng \"\"):\n" +
+                "{\n" +
+                "  \"basics\": {\n" +
+                "    \"name\": \"Họ và tên\",\n" +
+                "    \"email\": \"\",\n" +
+                "    \"phone\": \"\",\n" +
+                "    \"location\": \"\",\n" +
+                "    \"summary\": \"Tóm tắt\"\n" +
+                "  },\n" +
+                "  \"work\": [\n" +
+                "    {\n" +
+                "      \"company\": \"Tên công ty\",\n" +
+                "      \"position\": \"Vị trí\",\n" +
+                "      \"date\": \"Thời gian làm việc\",\n" +
+                "      \"summary\": \"Mô tả công việc\"\n" +
+                "    }\n" +
+                "  ],\n" +
+                "  \"education\": [\n" +
+                "    {\n" +
+                "      \"institution\": \"Tên trường\",\n" +
+                "      \"studyType\": \"Bằng cấp\",\n" +
+                "      \"area\": \"Chuyên ngành\",\n" +
+                "      \"date\": \"Thời gian học\"\n" +
+                "    }\n" +
+                "  ],\n" +
+                "  \"skills\": [\n" +
+                "    {\n" +
+                "      \"name\": \"Tên kỹ năng\",\n" +
+                "      \"level\": \"Basic/Intermediate/Advanced\"\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}\n" +
+                "Chỉ trả về đúng code JSON hợp lệ, không dùng Markdown, không giải thích gì thêm.";
+
+        Map<String, Object> requestBody = Map.of(
+                "model", "google/gemini-2.0-flash-001",
+                "messages", List.of(
+                        Map.of("role", "user", "content", List.of(
+                                Map.of("type", "text", "text", prompt),
+                                Map.of("type", "image_url", "image_url", Map.of("url", dataUrl))
+                        ))
+                )
+        );
+
+        Map<String, Object> response = sendRequestToOpenRouter(requestBody);
+        return extractJsonFromResponse(response);
+    }
 
     private Map<String, Object> sendRequestToOpenRouter(Map<String, Object> body) {
         RestTemplate restTemplate = new RestTemplate();

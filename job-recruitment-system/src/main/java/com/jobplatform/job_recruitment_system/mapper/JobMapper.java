@@ -21,6 +21,7 @@ public interface JobMapper {
     @Mapping(target = "company", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     void updateJob(JobPostRequest source, @MappingTarget Job target);
 
     @Mapping(target = "totalApplications",ignore = true)

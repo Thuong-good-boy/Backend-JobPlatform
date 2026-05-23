@@ -3,6 +3,7 @@ package com.jobplatform.job_recruitment_system.services;
 import com.jobplatform.job_recruitment_system.dtos.Response.ChatMessageResponse;
 import com.jobplatform.job_recruitment_system.dtos.Response.ChatNotificationReponse;
 import com.jobplatform.job_recruitment_system.dtos.request.ChatMessageRequest;
+import com.jobplatform.job_recruitment_system.enums.MessageType;
 import com.jobplatform.job_recruitment_system.enums.Role;
 import com.jobplatform.job_recruitment_system.exceptions.AppException;
 import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,7 +35,7 @@ public class ChatMessageService {
     private  final  UserService userService;
     private final SimpMessagingTemplate messagingTemplate;
     private  final  ChatRoomService chatRoomService;
-    private  final CandidateRepository candidateRepository;
+    private  final FileUploadService fileUploadService;
     @Transactional
     public void save(Long jobId,ChatMessageRequest  request){
         ChatRoom room = chatRoomRepository.findById(jobId)
@@ -43,6 +45,10 @@ public class ChatMessageService {
         message.setSenderId(request.getSenderId());
         message.setRead(false);
         message.setContent(request.getContent());
+        message.setMessageType(request.getMessageType());
+        message.setFileName(request.getFileName());
+        message.setFileUrl(request.getFileUrl()!=null? request.getFileUrl() : MessageType.TEXT.toString());
+
         ChatMessage chatMessage = chatMessageRepository.save(message);
         room.setLastMessageAt(LocalDateTime.now());
         ChatRoom chatRoom =  chatRoomRepository.save(room);
@@ -84,7 +90,24 @@ public class ChatMessageService {
         chatMessageRepository.markMessagesAsRead(roomId,currentUserId);
     }
 
-
+    public  String getUpFile(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new AppException(ErrorCode.FILE_01);
+        }
+        String urlFile = null;
+        try {
+            urlFile = fileUploadService.uploadFile(file);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return urlFile;
+    }
+    public  void deleteFile(String file){
+        if (file == null || file.isEmpty()) {
+            throw  new AppException(ErrorCode.FILE_02);
+        }
+        fileUploadService.deleteImage(file);
+    }
 
 
 }

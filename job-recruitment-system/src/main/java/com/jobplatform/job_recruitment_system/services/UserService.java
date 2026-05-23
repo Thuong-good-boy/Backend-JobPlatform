@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -141,6 +142,7 @@ public class UserService {
         return newAccessToken;
     }
 
+    @Transactional
     public void registerUser(RegisterRequest registerRequest) {
         if (userRepository.findByEmailAndActiveTrue(registerRequest.getEmail()).isPresent()) {
             throw new AppException(ErrorCode.USER_001);
@@ -180,7 +182,6 @@ public class UserService {
         return response;
     }
     public void verifyUser(String email, String inputOtp) {
-        // 1. Móc mã OTP từ Redis ra đối chiếu
         String redisOtp = redisService.getData("REG_OTP:" + email);
         if (redisOtp == null || !redisOtp.equals(inputOtp)) {
             throw new AppException(ErrorCode.USER_006);
@@ -192,21 +193,16 @@ public class UserService {
         }
 
         try {
-            // 3. Đọc JSON thành DTO RegisterRequest
             ObjectMapper mapper = new ObjectMapper();
             RegisterRequest request = mapper.readValue(userJson, RegisterRequest.class);
 
             User user = userMapper.toEntity(request);
-
-            // Cấu hình các trường bảo mật
             user.setPassword(passwordEncoder.encode(request.getPassword()));
             user.setAuthProvider("LOCAL");
             user.setActive(true);
 
-            // Lưu vào DB
             userRepository.save(user);
 
-            // 5. Quét dọn rác trong Redis
             redisService.delete("REG_OTP:" + email);
             redisService.delete("REG_DATA:" + email);
 
@@ -216,8 +212,18 @@ public class UserService {
     }
     public Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
-        return userDetails.getId() ;
+        if (auth == null || !auth.isAuthenticated()) {
+            return null;
+        }
+
+        Object principal = auth.getPrincipal();
+
+        if (principal instanceof CustomUserDetails) {
+            CustomUserDetails userDetails = (CustomUserDetails) principal;
+            return userDetails.getId();
+        }
+
+        return null;
     }
     public  Role getCurrentUserRode(){
         Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
@@ -299,13 +305,13 @@ public class UserService {
 
 
     }
+    @Async
     public void processForgotPassword(String email) {
         User user= userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_003));
         if(!user.getActive()){
             throw  new AppException(ErrorCode.AUTH_011);
         }
-        System.out.println(email);
         String otp = String.valueOf(new Random().nextInt(900000) + 100000);
 
         try {
@@ -424,6 +430,10 @@ public class UserService {
         Company company = companyRepository.getReferenceById(id);
         companyMapper.updateCompany(request, company);
         companyRepository.save(company);
+    }
+    public String maskEmail(String email) {
+        if (email == null) return null;
+        return email.substring(0, 2) + "***@" + email.split("@")[1];
     }
 
 }

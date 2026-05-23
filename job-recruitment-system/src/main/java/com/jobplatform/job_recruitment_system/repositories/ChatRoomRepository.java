@@ -19,10 +19,11 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     @Query("SELECT cr FROM ChatRoom cr WHERE cr.company.user.id = :userId OR cr.candidate.user.id = :userId")
     Page<ChatRoom> findUserChatRooms(@Param("userId") Long userId, Pageable pageable);
 
-    @Query("select c from ChatRoom c where c.candidate.user.id = :userId")
+    @Query("select c from ChatRoom c where c.candidate.user.id = :userId order by c.lastMessageAt desc")
     Page<ChatRoom> findByCandidateUserId(@Param("userId") Long userId, Pageable pageable);
 
-    @Query("select c from ChatRoom c where c.company.id = :companyId")
+    @Query("select c from ChatRoom c where c.company.id = :companyId order by  c.lastMessageAt desc")
     Page<ChatRoom> findByCompanyId(@Param("companyId") Long companyId, Pageable pageable);
+    Boolean existsByCompanyIdAndCandidateIdAndJobId(Long companyId, Long candidateId, Long jobId);
 
 }

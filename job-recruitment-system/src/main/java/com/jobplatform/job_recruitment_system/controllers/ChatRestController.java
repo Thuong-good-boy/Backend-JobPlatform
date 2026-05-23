@@ -6,16 +6,22 @@ import com.jobplatform.job_recruitment_system.repositories.ChatMessageRepository
 import com.jobplatform.job_recruitment_system.repositories.ChatRoomRepository;
 import com.jobplatform.job_recruitment_system.services.ChatMessageService;
 import com.jobplatform.job_recruitment_system.services.ChatRoomService;
+import com.jobplatform.job_recruitment_system.services.FileUploadService;
 import com.jobplatform.job_recruitment_system.services.UserService;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.repository.query.Param;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -25,7 +31,8 @@ public class ChatRestController {
 
     private final ChatRoomService chatRoomService;
     private final ChatMessageService chatMessageService;
-    private  final UserService userService;
+
+
 
     @GetMapping("/rooms/candidate")
     public ResponseEntity<Slice<ChatRoom>> getRoomsByCandidate(@RequestParam(defaultValue = "0") int page,
@@ -58,5 +65,17 @@ public class ChatRestController {
     public ResponseEntity<Long> getTotalUnreadCount() {
         long total = chatRoomService.getTotalUnreadCount();
         return ResponseEntity.ok(total);
+    }
+    @PostMapping(value = "/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public  ResponseEntity<?> uploadfileDate(@RequestParam("file")MultipartFile file){
+        String urlFile = chatMessageService.getUpFile(file);
+        String tenFileGoc = file.getOriginalFilename();
+        return  ResponseEntity.ok(Map.of("fileUrl", urlFile,
+                "fileName", tenFileGoc != null ? tenFileGoc : "Attachment"));
+    }
+    @DeleteMapping("/deleteFile")
+    public ResponseEntity<?> deleteFile(@RequestParam("urlFile") String urlFile){
+        chatMessageService.deleteFile(urlFile);
+        return  ResponseEntity.ok(Map.of("message", "đã xóa thành công."));
     }
 }

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-05-16T22:14:03+0700",
+    date = "2026-05-23T10:42:54+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.6 (Oracle Corporation)"
 )
 @Component
@@ -49,6 +49,9 @@ public class CandidateMapperImpl implements CandidateMapper {
         if ( source.getIsPublic() != null ) {
             taget.setIsPublic( source.getIsPublic() );
         }
+        if ( source.getAiPoints() != null ) {
+            taget.setAiPoints( source.getAiPoints() );
+        }
         if ( source.getUpdatedAt() != null ) {
             taget.setUpdatedAt( source.getUpdatedAt() );
         }
@@ -68,6 +71,7 @@ public class CandidateMapperImpl implements CandidateMapper {
             candidateProfileResponse.setAvatarUrl( user.getAvatarUrl() );
         }
         if ( candidate != null ) {
+            candidateProfileResponse.setAiPoints( candidate.getAiPoints() );
             candidateProfileResponse.setTitle( candidate.getTitle() );
             candidateProfileResponse.setBio( candidate.getBio() );
             candidateProfileResponse.setExperienceYears( candidate.getExperienceYears() );

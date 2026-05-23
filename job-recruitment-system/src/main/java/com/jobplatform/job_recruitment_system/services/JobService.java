@@ -20,9 +20,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.history.Revisions;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.PathVariable;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.StringNode;
@@ -36,7 +39,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class JobService {
 
-     private final JobRepository jobRepository;
+     private final JobRepository    jobRepository;
      private final UserService userService;
      private final CompanyRepository companyRepository;
      private final SkillRepository skillRepository;
@@ -50,24 +53,86 @@ public class JobService {
     private  final  NotificationRepository notificationRepository;
     private  final MessageSource messageSource;
     private  final SimpMessagingTemplate messagingTemplate;
+    private  final ObjectMapper objectMapper;
     public Slice<Job> getJobsForUser(int page, int size) {
         Pageable pageable = PageRequest.of(page,size);
             return jobRepository.findAllJobsOpen(pageable);
     }
-    public Slice<Job> getJobsPro(int page, int size){
-        Pageable pageable = PageRequest.of(page, size);
-        return  jobRepository.fillAllJobsPro(pageable);
+    public List<Job>  getJobsPro(){
+       try {
+           Long uerId = userService.getCurrentUserId();
+           if(uerId== null){
+               List<Job> topJobs = jobRepository.findTop3ProJobsRoundRobin();
+               incrementViewCountAsync(topJobs);
+               setLastBoostedAt(topJobs);
+               return  topJobs;
+           }
+           Cv cv = cvService.getFirstCv(uerId).orElse(null);
+           if(cv == null){
+               List<Job> topJobs = jobRepository.findTop3ProJobsRoundRobin();
+               incrementViewCountAsync(topJobs);
+               setLastBoostedAt(topJobs);
+               return  topJobs;
+
+           }
+           System.out.println(cv.getCvName());
+           String cvData = cv.getCvData();
+           JsonNode rootNode = objectMapper.readTree(cvData);
+           JsonNode skillsNode = rootNode.path("skills");
+           List<String> formattedSkills = new ArrayList<>();
+           if (skillsNode.isArray()) {
+               for (JsonNode skillNode : skillsNode) {
+                   String skill = skillNode.asText().trim();
+                   if (!skill.isEmpty()) {
+                       if (skill.contains(" ")) {
+                           skill = "(" + skill.replace(" ", " & ") + ")";
+                       }
+                       formattedSkills.add(skill);
+                   }
+               }
+           }
+           String skillQueryString = String.join(" | ", formattedSkills);
+           List<Job> topJobs = jobRepository.findTop3ProJobsBySkills(skillQueryString);
+           setLastBoostedAt(topJobs);
+           incrementViewCountAsync(topJobs);
+           return topJobs;
+
+       }catch (Exception e){
+           e.printStackTrace();
+           return new ArrayList<>();
+       }
+
     }
     public Page<Job> getJobsForAdmin(int page, int size, String search, String status) {
         Pageable pageable = PageRequest.of(page,size);
             if(status.equals("ALL")){
-           return   jobRepository.findAll(pageable);
+           return   jobRepository.findAllForAdmin(pageable);
         }else{
             JobStatus jobStatus = JobStatus.valueOf(status);
-            return jobRepository.findAllForAdmin(pageable, search, jobStatus);
+            return jobRepository.findAllByStatusForAdmin(pageable, search, jobStatus);
         }
 
     }
+    @Async
+    @Transactional
+    public void incrementViewCountAsync(List<Job> jobList) {
+        if (jobList == null || jobList.isEmpty()) {
+            return;
+        }
+        List<Long> jobIds = jobList.stream().map(Job::getId).toList();
+        jobRepository.incrementViewCountForJobs(jobIds);
+    }
+    @Async
+    public void setLastBoostedAt(List<Job> jobList) {
+        if (jobList == null || jobList.isEmpty()) {
+            return;
+        }
+        for (Job job : jobList) {
+            job.setLastBoostedAt(LocalDateTime.now());
+        }
+        jobRepository.saveAll(jobList);
+    }
+
     public Page<JobRecommendationResponse> getJobRecommendationResponses(int page, int size){
 
         Pageable pageable = PageRequest.of(page,size);
@@ -140,7 +205,6 @@ public class JobService {
             job.setSkills(jobSkills);
         }
         Job jobnew= jobRepository.save(job);
-//        aiMatchingService.processNewJob(jobnew);
         NotificationType type = NotificationType.NEW_JOB_PENDING;
         Locale locale = LocaleContextHolder.getLocale();
         String titleKey ="noti.title."+type.name();
@@ -168,7 +232,7 @@ public class JobService {
 
     }
 
-    public Page<Job> searchJobs(String keyword,int page, int size) {
+    public Slice<Job> searchJobs(String keyword,int page, int size) {
         Pageable pageable = PageRequest.of(page,size);
         String cleanKey =  (keyword!=null) ? keyword.trim():"";
         return jobRepository.searchJobs(cleanKey,pageable);
@@ -266,6 +330,7 @@ public class JobService {
             throw new AppException(ErrorCode.JOB_004);
         }
         jobMapper.updateJob(request, job);
+
         if (request.getSkillNames() != null) {
             Set<Skill> jobSkills = new HashSet<>();
             for (String skillName : request.getSkillNames()) {
@@ -275,7 +340,6 @@ public class JobService {
             }
             job.setSkills(jobSkills);
         }
-
         return jobRepository.save(job);
     }
 
@@ -331,6 +395,13 @@ public class JobService {
             jobRepository.save(job);
             return company.getRemainingBoosts();
     }
-
-
+    public Revisions<Integer, Job> getJobHistory(@PathVariable Long id){
+        return jobRepository.findRevisions(id);
+    }
+    @Async
+    public void incrementClickCount(Long jobId) {
+        Job job = jobRepository.findById(jobId).orElseThrow(()-> new AppException(ErrorCode.JOB_001));
+        job.setClickCount(job.getClickCount()+1);
+        jobRepository.save(job);
+    }
 }

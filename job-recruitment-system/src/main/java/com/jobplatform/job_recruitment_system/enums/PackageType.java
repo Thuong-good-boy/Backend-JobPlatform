@@ -1,5 +1,5 @@
 package com.jobplatform.job_recruitment_system.enums;
 
 public enum PackageType {
-    CANDIDATE_PRO, COMPANY_PRO, JOB_BOOST
+    CANDIDATE_PRO, COMPANY_PRO, JOB_BOOST,CV_UNLOCK,AI_ASSISTANT
 }

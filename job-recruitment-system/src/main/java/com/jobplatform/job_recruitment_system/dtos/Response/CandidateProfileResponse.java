@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @AllArgsConstructor
 @Data
 @NoArgsConstructor
@@ -18,4 +20,6 @@ public class CandidateProfileResponse {
     private Integer expectedSalaryMin;
     private Integer expectedSalaryMax;
     private Boolean isPublic;
+    private LocalDateTime proEnd;
+    private  Integer aiPoints ;
 }

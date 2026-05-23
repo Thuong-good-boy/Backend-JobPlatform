@@ -15,6 +15,7 @@ import com.jobplatform.job_recruitment_system.models.*;
 import com.jobplatform.job_recruitment_system.repositories.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,14 +35,16 @@ public class  ApplicationService {
      private final UserRepository userRepository;
     private  final  NotificationService notificationService;
     private  final  UserService userService;
-    private  final ApplicationMapper applicationMapper;
     private final  ChatRoomService chatRoomService;
     private  final CandidateRepository candidateRepository;
+    private  final MatchScoreRepository matchScoreRepository;
+    private  final AiMatchingService aiMatchingService;
+    @Async
     public void applyForJob(Long jobId) {
         Long  userId= userService.getCurrentUserId();
         Job job = jobRepository.getReferenceById(jobId);
         Cv cv = cvRepository.getCvByUserId(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.CV_002));
+                .orElseThrow(() -> new AppException(ErrorCode.CV_006));
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.AUTH_008));
@@ -57,6 +60,11 @@ public class  ApplicationService {
         app.setFullName(user.getFullName());
         app.setStatus(AppStatus.APPLIED);
         applicationRepository.save(app);
+
+        Boolean hasMacthScore = matchScoreRepository.existsByJobIdAndCvId(jobId, cv.getId());
+        if(!hasMacthScore){
+            aiMatchingService.calculateAndSave(cv,job);
+        }
 
         NotificationType type = NotificationType.NEW_APPLICATION;
         Map<String,Object> metadata = new HashMap<>();
@@ -135,25 +143,14 @@ public class  ApplicationService {
 
     }
     @Transactional
-    public void updateApplicationStatus(Long applicationId, AppStatus newStatus) {
+    public Boolean updateApplicationStatus(Long applicationId, AppStatus newStatus) {
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_012));
-
         application.setStatus(newStatus);
         Application newApplicationStatus = applicationRepository.save(application);
         Long CandidateId =  candidateRepository.getCandidateIdByUSerId(newApplicationStatus.getUser().getId());
         Candidate  candidate = candidateRepository.getReferenceById(CandidateId);
-        if(AppStatus.INTERVIEW.equals(newStatus)){
-            try {
-                chatRoomService.createRoomIfNotExist(
-                        application.getJob().getId(),
-                        application.getJob().getCompany().getId(),
-                        CandidateId
-                );
-            } catch (Exception e) {
-                System.err.println("Lỗi khi tạo phòng chat: " + e.getMessage());
-            }
-        }
+        Boolean hasChatRoom = chatRoomService.checkHasChatRoom(newApplicationStatus.getJob().getCompany().getId(),CandidateId, application.getJob().getId());
         NotificationType type = (newStatus == AppStatus.INTERVIEW)
                 ? NotificationType.INTERVIEW_INVITED
                 : NotificationType.APPLICATION_REJECTED;
@@ -170,5 +167,16 @@ public class  ApplicationService {
                 metadata,
                 application.getJob().getTitle()
         );
+        return  hasChatRoom;
+    }
+    @Transactional
+    public  void createRoomChat(Long applicationId){
+        Application application = applicationRepository.getReferenceById(applicationId);
+        Long candidateId = candidateRepository.getCandidateIdByUSerId(application.getUser().getId());
+        chatRoomService.createRoomIfNotExist(
+                        application.getJob().getId(),
+                        application.getJob().getCompany().getId(),
+                         candidateId
+                );
     }
 }

@@ -45,4 +45,6 @@ public interface MatchScoreRepository  extends JpaRepository<MatchScore, MatchSc
     @Query("Select new com.jobplatform.job_recruitment_system.dtos.Response.JobRecommendationResponse(ms.job, ms.score, ms.match_details, ms.job.company.companyName) " +
             "FROM MatchScore ms WHERE ms.cv.id = :cvId and ms.job.id =:jobId")
     JobRecommendationResponse findRecommendedJobsByJobId(@Param("jobId") Long jobId, @Param("cvId") Long cvId );
+    Boolean existsByJobIdAndCvId(Long jobId, Long cvId);
+
 }

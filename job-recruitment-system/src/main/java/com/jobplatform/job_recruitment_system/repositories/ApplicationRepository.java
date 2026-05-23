@@ -26,7 +26,8 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
     @Query("""
         select new com.jobplatform.job_recruitment_system.dtos.Response.ApplicationOnlyJobResponse(
                 a.id, a.fullName , a.status,
-                a.appliedAt, c.id, c.fileUrl, m.score, m.match_details
+                a.appliedAt, c.id, c.fileUrl, m.score, m.match_details,
+                        a.job.company.companyName, a.user.email
                 )
         from Application a left join a.cv c
              left join MatchScore m on(c.id = m.cv.id AND m.job.id = a.job.id)

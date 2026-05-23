@@ -12,6 +12,9 @@ public interface CandidateMapper {
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void upDidateCandidate(Candidate source, @MappingTarget Candidate taget);
 
+    @Mapping(target = "proEnd",ignore = true)
+    @Mapping(target = "fullName", source = "user.fullName")
+    @Mapping(target = "aiPoints",source = "candidate.aiPoints")
     CandidateProfileResponse toDTO(User user, Candidate candidate);
 
     void upCadidateByDTO( CandidateProfileRequest source ,@MappingTarget Candidate taget);

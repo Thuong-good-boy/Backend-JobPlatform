@@ -2,21 +2,25 @@ package com.jobplatform.job_recruitment_system.controllers;
 
 import com.jobplatform.job_recruitment_system.dtos.request.ApplyRequest;
 import com.jobplatform.job_recruitment_system.dtos.Response.ApplicationOnlyJobResponse;
+import com.jobplatform.job_recruitment_system.dtos.request.SendEmailRequest;
 import com.jobplatform.job_recruitment_system.enums.AppStatus;
 import com.jobplatform.job_recruitment_system.repositories.ApplicationRepository;
 import com.jobplatform.job_recruitment_system.repositories.CvRepository;
 import com.jobplatform.job_recruitment_system.repositories.JobRepository;
 import com.jobplatform.job_recruitment_system.services.ApplicationService;
+import com.jobplatform.job_recruitment_system.services.EmailService;
 import com.jobplatform.job_recruitment_system.services.UserService;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/applications")
@@ -25,6 +29,7 @@ import java.util.List;
 public class ApplicationController {
 
     private  final ApplicationService applicationService;
+    private  final EmailService emailService;
     @GetMapping("/job/{jobId}")
     public ResponseEntity<List<ApplicationOnlyJobResponse>> getApplicationsByJob(
             @PathVariable
@@ -48,8 +53,8 @@ public class ApplicationController {
             AppStatus newStatus) {
         try {
             System.out.println(newStatus+"////////////"+ applicationId);
-            applicationService.updateApplicationStatus(applicationId, newStatus);
-            return ResponseEntity.ok("Đã cập nhật trạng thái thành " + newStatus);
+            Boolean hasChatRoom = applicationService.updateApplicationStatus(applicationId, newStatus);
+            return ResponseEntity.ok(Map.of("hasChatRoom", hasChatRoom, "message", "Đã cập nhật trạng thái thành " + newStatus));
         } catch (RuntimeException e) {
             e.printStackTrace();
             return ResponseEntity.badRequest().body("Lỗi: " + e.getMessage());
@@ -57,4 +62,27 @@ public class ApplicationController {
             return ResponseEntity.internalServerError().body("Lỗi hệ thống: " + e.getMessage());
         }
     }
+    @PostMapping("/send-email")
+    public ResponseEntity<?> sendEmailToCandidate(
+            @RequestBody SendEmailRequest request
+           ) {
+
+        try {
+            emailService.sendInterviewEmail(request);
+            return ResponseEntity.ok("Gửi email thành công!");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("Lỗi khi gửi email: " + e.getMessage());
+        }
+    }
+    @PostMapping("/create/roomchat/{applicationId}")
+    public  void creatRoomChat(
+            @PathVariable
+            @Min(value = 1, message = "JOB_INVALID")
+            Long applicationId
+    ){
+        applicationService.createRoomChat(applicationId);
+
+    }
+
 }

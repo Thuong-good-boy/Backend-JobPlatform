@@ -11,6 +11,8 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class CandidateProResponse {
     private  Long id;
-    private  int  durationDay;
+    private  Integer durationDays;
     private BigDecimal price;
+    private  String name;
+    private  Integer pointsGranted;
 }

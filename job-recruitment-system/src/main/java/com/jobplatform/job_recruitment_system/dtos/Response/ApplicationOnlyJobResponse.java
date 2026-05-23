@@ -22,4 +22,6 @@ public class ApplicationOnlyJobResponse {
     private String cvUrl;
     private Double aiMatchScore;
     private String aiMatchReason;
+    private  String companyName;
+    private String email;
 }

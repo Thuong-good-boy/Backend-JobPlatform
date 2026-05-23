@@ -10,6 +10,8 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "Spring")
 public interface PackageMapper {
     CandidateProResponse formPackage(Package aPackage);
+    @Mapping(target = "cvViewLimit",source = "packageRequest.cvViewLimit")
+    @Mapping(target = "pointsGranted",source = "packageRequest.pointsGranted")
     Package fromRequest(PackageRequest packageRequest);
     void updatePackage(@MappingTarget Package aPackage, PackageRequest packageRequest);
 }

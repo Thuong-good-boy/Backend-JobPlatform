@@ -5,6 +5,11 @@ import com.jobplatform.job_recruitment_system.enums.JobStatus;
 import jakarta.persistence.*;
 import lombok.*; // Dùng Getter, Setter thay vì Data để an toàn hơn với JPA
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
+import org.hibernate.envers.RelationTargetAuditMode;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -17,6 +22,7 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Audited
 public class Job {
 
     @Id
@@ -36,10 +42,19 @@ public class Job {
 
     @Enumerated(EnumType.STRING)
     private JobStatus status = JobStatus.PENDING;
-
+    @Column(name = "view_count", columnDefinition = "int default 0")
+    @NotAudited
+    private Integer viewCount = 0;
+    @NotAudited
+    @Column(name = "click_count", columnDefinition = "int default 0")
+    private Integer clickCount = 0;
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    @NotAudited
+    private LocalDateTime updatedAt;
 
     @Column(name = "is_pinning")
     private Boolean isTrending;
@@ -49,13 +64,16 @@ public class Job {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id", nullable = false)
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private Company company;
-
+    @Column(name = "last_boosted_at")
+    private LocalDateTime lastBoostedAt;
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "job_skills",
             joinColumns = @JoinColumn(name = "job_id"),
             inverseJoinColumns = @JoinColumn(name = "skill_id")
     )
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private Set<Skill> skills = new HashSet<>();
 }

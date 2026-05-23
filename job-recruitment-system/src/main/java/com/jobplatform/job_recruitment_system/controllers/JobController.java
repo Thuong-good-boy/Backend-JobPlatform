@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.history.Revisions;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -33,7 +34,7 @@ public class JobController {
     private final SaveJobService saveJobService;
     private final UserService userService;
     private final  ReportReasonsService reasonsService;
-
+    private  final CompanyService companyService;
     @PostMapping("/create")
     public ResponseEntity<?> createJob(@Valid @RequestBody JobPostRequest request) {
         jobService.postJob(request);
@@ -41,10 +42,9 @@ public class JobController {
     }
     @GetMapping("/jobpost")
     public ResponseEntity<?> getAllJobsPost(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "6") int size
     ) {
-        Slice<Job> jobPro = jobService.getJobsPro(page,size);
+        System.out.println("Có vào đây ");
+        List<Job> jobPro = jobService.getJobsPro();
         return ResponseEntity.ok( jobPro);
     }
     @GetMapping
@@ -81,7 +81,9 @@ public class JobController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "6") int size
     ) {
-        return ResponseEntity.ok(jobService.searchJobs(keyword, page, size));
+        Slice<Job> jobPage = jobService.searchJobs(keyword, page, size);
+        Slice<TopCompanyResponse> companies = companyService.searchCompanies(keyword, page, size);
+        return ResponseEntity.ok(Map.of("Jobs",jobPage,"companies",companies));
     }
 
     @GetMapping("/my-company-jobs")
@@ -216,6 +218,21 @@ public class JobController {
             return ResponseEntity.ok("Đã xóa tin tuyển dụng thành công!");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body("Lỗi: " + e.getMessage());
+        }
+    }
+    @GetMapping("/{id}/history")
+    public ResponseEntity<?> getJobHistory(@PathVariable Long id) {
+        Revisions<Integer, Job> revisions = jobService.getJobHistory(id);
+
+        return ResponseEntity.ok(revisions.getContent());
+    }
+    @PostMapping("/{id}/click")
+    public ResponseEntity<?> incrementClickCount(@PathVariable("id") Long id) {
+        try {
+            jobService.incrementClickCount(id);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
         }
     }
 

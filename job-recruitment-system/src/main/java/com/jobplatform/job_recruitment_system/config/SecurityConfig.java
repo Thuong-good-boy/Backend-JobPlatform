@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/jobs/*").hasAnyAuthority("COMPANY","ADMIN")
                         .requestMatchers(HttpMethod.DELETE,"/api/jobs/*").hasAuthority("COMPANY")
                         .requestMatchers(HttpMethod.GET, "/api/applications/job/**").hasAuthority("COMPANY")
+                        .requestMatchers(HttpMethod.POST, "/api/applications/create/roomchat").hasAuthority("COMPANY")
                         .requestMatchers("/api/Skill").hasAnyAuthority("COMPANY","ADMIN")
                         .requestMatchers("/api/company/profile").hasAuthority("COMPANY")
                         .requestMatchers("/api/jobs/create").hasAuthority("COMPANY")
@@ -76,7 +77,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET,"/api/chat/rooms/candidate").hasAuthority("CANDIDATE")
                         .requestMatchers(HttpMethod.GET,"/api/chat/rooms/company").hasAuthority("COMPANY")
                         .requestMatchers(HttpMethod.GET,"/api/chat/*/messages").hasAnyAuthority("CANDIDATE","COMPANY")
-
+                        .requestMatchers(HttpMethod.POST,"/api/company/unlock-cv").hasAuthority("COMPANY")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

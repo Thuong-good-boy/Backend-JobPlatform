@@ -23,7 +23,6 @@ public class AiMatchingService {
      private final JobRepository jobRepository;
      private final CvRepository cvRepository;
     private  final ObjectMapper objectMapper;
-
     @Async
     public void processNewCv(Cv cv) {
         try {
@@ -52,7 +51,7 @@ public class AiMatchingService {
             throw new RuntimeException(e);
         }
     }
-
+    @Async
     public void calculateAndSave(Cv cv, Job job) {
         try {
             MatchResultReponse result = aiOcrService.calculateMatchScore(cv.getCvData(), job.getDescription());
@@ -70,7 +69,6 @@ public class AiMatchingService {
 
             ms.setScore(result.getScore());
 
-            // Dùng String.format để tránh lỗi nháy kép trong reason làm hỏng JSON
             String safeReason = result.getReason().replace("\"", "'");
             ms.setMatch_details("{\"reason\": \"" + safeReason + "\"}");
 

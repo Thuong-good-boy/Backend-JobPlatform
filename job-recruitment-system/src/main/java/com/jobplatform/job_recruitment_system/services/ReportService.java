@@ -41,6 +41,7 @@ public class ReportService {
     private  final  NotificationService notificationService;
     private  final CompanyRepository companyRepository;
     private  final JobRepository jobRepository;
+    private  final RedisService redisService;
 
     public void creatReport(ReportSubmitRequest request) throws Exception {
         boolean hasReasonId = request.getReasonId() != null;
@@ -53,7 +54,12 @@ public class ReportService {
         Report report = new Report();
         User user = userService.getUserId(userService.getCurrentUserId())
                 .orElseThrow(() -> new AppException(ErrorCode.AUTH_008));
-
+        String redisKey = "report_cooldown:" + user.getId()+ ":" + request.getTargetId();
+        if (redisService.getData(redisKey) != null) {
+            throw new AppException(ErrorCode.REPORT_02);
+        }
+        System.out.println(redisKey);
+        redisService.saveData(redisKey, "locked", 5);
         try {
             System.out.println("Bắt đầu xử lý tạo report...");
             report.setReporter(user);
@@ -124,6 +130,7 @@ public class ReportService {
 
         } catch (Exception e) {
             System.err.println("LỖI TẠI CREAT-REPORT: " + e.getMessage());
+            redisService.delete(redisKey);
             e.printStackTrace();
             throw e;
         }

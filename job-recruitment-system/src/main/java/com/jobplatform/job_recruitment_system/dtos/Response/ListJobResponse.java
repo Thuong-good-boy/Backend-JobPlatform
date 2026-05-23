@@ -23,4 +23,6 @@ public class ListJobResponse {
     private Integer totalApplications;
     private Integer newApplications;
     private LocalDateTime trendingUntil;
+    private Integer viewCount;
+    private Integer clickCount;
 }

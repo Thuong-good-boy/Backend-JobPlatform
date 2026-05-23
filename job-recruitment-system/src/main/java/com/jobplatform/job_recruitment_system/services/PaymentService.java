@@ -34,6 +34,7 @@ public class PaymentService {
     private  final  AiMatchingService aiMatchingService;
     private  final UserRepository userRepository;
     private  final  CompanyRepository companyRepository;
+    private  final CandidateRepository candidateRepository;
     public String createVnPayPaymentUrl(HttpServletRequest request, Long amount, Long packageId,String bankCode) {
         String vnp_Version = vnPayConfig.vnp_Version;
         String vnp_Command = vnPayConfig.vnp_Command;
@@ -177,6 +178,19 @@ public class PaymentService {
                                     company.setRemainingBoosts(currentBoosts+aPackage.getJobPostLimit());
                                     companyRepository.save(company);
 
+                                }
+                                if(PackageType.CV_UNLOCK.equals(aPackage.getType())&& aPackage.getCvViewLimit()>0){
+                                    int currentCvViews = company.getRemainingCvViews();
+                                    company.setRemainingCvViews(currentCvViews+ aPackage.getCvViewLimit());
+                                    companyRepository.save(company);
+                                }
+
+                            }else{
+                                Candidate candidate= candidateRepository.findByUserId(user.getId()).orElseThrow(()-> new AppException(ErrorCode.AUTH_008));
+                                if(PackageType.AI_ASSISTANT.equals(aPackage.getType())&& aPackage.getPointsGranted()>0){
+                                    int currentAiPoints = candidate.getAiPoints();
+                                    candidate.setAiPoints(currentAiPoints+ aPackage.getPointsGranted());
+                                    candidateRepository.save(candidate);
                                 }
                             }
 

@@ -14,16 +14,17 @@ import java.util.Optional;
 public interface PackageRepository extends JpaRepository<Package,Long> {
      Optional<Package> findById(Long id);
     @Query(value = """
- select p.id, p.duration_days as durationDays,p.price 
+ select p.id, p.duration_days as durationDays,p.price,p.name,p.points_granted
  from packages p 
- where p."type" = 'CANDIDATE_PRO'
+ where p."type" = 'CANDIDATE_PRO'or p."type" = 'AI_ASSISTANT'
 """,nativeQuery = true)
     List<CandidateProResponse> getCadidateProResponse();
     @Query(value = """
- select p.id,p."name", p.duration_days as durationDays ,p.job_post_limit as jobPostLimit, p.price
+ select p.id,p."name", p.duration_days as durationDays ,p.job_post_limit as jobPostLimit, p.cv_view_limit as cvViewLimit, p.price
 from packages p
 where p."type" = 'COMPANY_PRO'
 or p."type" = 'JOB_BOOST'
+or p."type" ='CV_UNLOCK'
 """,nativeQuery = true)
     List<PackageCompany> getpackageCompany();
 }

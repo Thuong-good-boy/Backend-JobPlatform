@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-05-16T22:14:03+0700",
+    date = "2026-05-23T10:14:31+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.6 (Oracle Corporation)"
 )
 @Component
@@ -24,7 +24,6 @@ public class CompanyMapperImpl implements CompanyMapper {
             return;
         }
 
-        target.setWebsite( source.getWebsite() );
         target.setDescription( source.getDescription() );
     }
 
@@ -52,6 +51,7 @@ public class CompanyMapperImpl implements CompanyMapper {
         CompanyProfileResponse companyProfileResponse = new CompanyProfileResponse();
 
         companyProfileResponse.setEmail( companyUserEmail( company ) );
+        companyProfileResponse.setRemainingCvViews( company.getRemainingCvViews() );
         companyProfileResponse.setCompanyName( company.getCompanyName() );
         companyProfileResponse.setTaxCode( company.getTaxCode() );
         companyProfileResponse.setWebsite( company.getWebsite() );

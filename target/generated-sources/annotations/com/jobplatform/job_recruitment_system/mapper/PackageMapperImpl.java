@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-05-16T22:14:03+0700",
+    date = "2026-05-23T11:00:09+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.6 (Oracle Corporation)"
 )
 @Component
@@ -23,7 +23,10 @@ public class PackageMapperImpl implements PackageMapper {
         CandidateProResponse candidateProResponse = new CandidateProResponse();
 
         candidateProResponse.setId( aPackage.getId() );
+        candidateProResponse.setDurationDays( aPackage.getDurationDays() );
         candidateProResponse.setPrice( aPackage.getPrice() );
+        candidateProResponse.setName( aPackage.getName() );
+        candidateProResponse.setPointsGranted( aPackage.getPointsGranted() );
 
         return candidateProResponse;
     }
@@ -36,6 +39,8 @@ public class PackageMapperImpl implements PackageMapper {
 
         Package.PackageBuilder package1 = Package.builder();
 
+        package1.cvViewLimit( packageRequest.getCvViewLimit() );
+        package1.pointsGranted( packageRequest.getPointsGranted() );
         package1.name( packageRequest.getName() );
         package1.type( packageRequest.getType() );
         package1.price( packageRequest.getPrice() );
@@ -60,5 +65,7 @@ public class PackageMapperImpl implements PackageMapper {
         aPackage.setDurationDays( packageRequest.getDurationDays() );
         aPackage.setJobPostLimit( packageRequest.getJobPostLimit() );
         aPackage.setStatus( packageRequest.getStatus() );
+        aPackage.setCvViewLimit( packageRequest.getCvViewLimit() );
+        aPackage.setPointsGranted( packageRequest.getPointsGranted() );
     }
 }

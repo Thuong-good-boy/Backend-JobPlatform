@@ -28,7 +28,9 @@ public class PackageService {
         return  packageRepository.findAll();
     }
     public  void createPackage(PackageRequest packageRequest){
+        System.out.println( "có ở đây: "+ packageRequest.getCvViewLimit());
         Package aPackage = packageMapper.fromRequest(packageRequest);
+
         packageRepository.save(aPackage);
     }
     public  void updatePackage(Long id,PackageRequest packageRequest){

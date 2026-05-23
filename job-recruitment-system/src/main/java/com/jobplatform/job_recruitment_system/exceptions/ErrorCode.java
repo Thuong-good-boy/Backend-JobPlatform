@@ -47,13 +47,14 @@ public enum ErrorCode {
     COM_003("Ảnh không rõ nét, AI không đọc được thông tin!", HttpStatus.BAD_REQUEST),
     COM_004("Thông tin trên giấy phép không khớp với hồ sơ hiện tại!", HttpStatus.BAD_REQUEST),
     COM_005("Tài khoản của bạn chưa được xác thực. Vui lòng chờ duyệt GPKD!",HttpStatus.BAD_REQUEST),
-    COM_006("TaxCode này đã được sử dụng",HttpStatus.ALREADY_REPORTED),
+    COM_006("Công ty này đã đăng ký",HttpStatus.ALREADY_REPORTED),
     // 5. Candidate & CV Errors
     CV_001("Chưa có profile ứng viên", HttpStatus.NOT_FOUND),
     CV_002("Không tìm thấy CV", HttpStatus.NOT_FOUND),
     CV_003("Không có quyền xóa CV này", HttpStatus.FORBIDDEN),
     CV_004("Không tìm thấy CV mặc định của user", HttpStatus.NOT_FOUND),
     CV_005("Cv này không thuộc quyền của bạn!", HttpStatus.INTERNAL_SERVER_ERROR),
+    CV_006("Bạn cần Tải Cv!", HttpStatus.BAD_REQUEST),
 
     GPKD_001("Xác thực giấy kinh doanh bằng ai thành công!", HttpStatus.OK),
     GPKD_002("Xác thực giấy kinh doanh bằng ai thất bại!",HttpStatus.BAD_GATEWAY),
@@ -97,7 +98,12 @@ public enum ErrorCode {
 
     REPORTREASON_01("Không tìm thấy ReportReason này!",HttpStatus.NOT_FOUND),
     REPORTREASON_02("Vui lòng cung cấp lý do báo cáo hợp lệ!",HttpStatus.BAD_REQUEST),
-    REPORT_01("Không tìm thấy report này!",HttpStatus.NOT_FOUND)
+    REPORT_01("Không tìm thấy report này!",HttpStatus.NOT_FOUND),
+    FILE_01("File rỗng!", HttpStatus.BAD_REQUEST),
+    FILE_02("Đường dẫn file không hợp lệ!", HttpStatus.BAD_REQUEST),
+    REPORT_02("Lỗi report liên tiếp .Vui lòng đợi 5 phút sau để tiếp!", HttpStatus.TOO_MANY_REQUESTS),
+    UNCLOCK_01("Bạn đã hết lượt xem cv!",HttpStatus.TOO_MANY_REQUESTS)
+
     ;
 
 

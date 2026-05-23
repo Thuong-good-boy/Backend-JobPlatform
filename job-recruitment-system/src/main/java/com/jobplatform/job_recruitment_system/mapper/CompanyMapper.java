@@ -24,6 +24,8 @@ public interface CompanyMapper {
     CompanyDashboardResponse todto(Company company);
 
     @Mapping(target = "email", source = "user.email")
+    @Mapping(target = "proEnd", ignore = true)
+    @Mapping(target = "remainingCvViews",source = "remainingCvViews")
     CompanyProfileResponse toProfileResponse(Company company);
 
     Company updateCompanyByProfileRequest(UpDateProfileCompanyRequest company, @MappingTarget Company target);

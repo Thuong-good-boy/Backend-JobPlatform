@@ -13,7 +13,5 @@ import org.springframework.web.multipart.MultipartFile;
 public class CompanyOnboardingRequest {
     @NotNull(message = "LICENSE_IMAGE_REQUIRED")
     private MultipartFile licenseImage;
-    private String website;
-    @Size(max = 2000, message = "DESCRIPTION_TOO_LONG")
     private String description;
 }

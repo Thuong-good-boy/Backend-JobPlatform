@@ -3,6 +3,8 @@ package com.jobplatform.job_recruitment_system.repositories;
 import com.jobplatform.job_recruitment_system.dtos.Response.TopCompanyResponse;
 import com.jobplatform.job_recruitment_system.models.Company;
 import com.jobplatform.job_recruitment_system.models.User;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -36,7 +38,7 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
             "WHERE LOWER(c.companyName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "GROUP BY c.id, c.companyName, c.logoUrl, c.description " +
             "ORDER BY COUNT(j.id) DESC")
-    List<TopCompanyResponse> searchCompaniesWithJobCount(@Param("keyword") String keyword);
+    Slice<TopCompanyResponse> searchCompaniesWithJobCount(Pageable pageable, @Param("keyword") String keyword);
 
     @Query("SELECT COUNT(c) FROM Company c")
     Long totalCompany();

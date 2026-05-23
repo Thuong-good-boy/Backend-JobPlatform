@@ -52,7 +52,6 @@ public class ChatRoomService {
     }
 
     public void createRoomIfNotExist(Long jobId, Long companyId, Long candidateId) {
-        // Hàm này nhận vào ID thực của Company và Candidate là đúng với Database mới
         ChatRoom chatRoom = chatRoomRepository.findByJobIdAndCompanyIdAndCandidateId(jobId, companyId, candidateId).orElse(null);
         if (chatRoom == null) {
             ChatRoom newRoom = new ChatRoom();
@@ -84,5 +83,8 @@ public class ChatRoomService {
         } else {
             return candidateUserId;
         }
+    }
+    public Boolean checkHasChatRoom(Long companyId, Long candidateId, Long jobId){
+        return chatRoomRepository.existsByCompanyIdAndCandidateIdAndJobId(companyId, candidateId, jobId);
     }
 }

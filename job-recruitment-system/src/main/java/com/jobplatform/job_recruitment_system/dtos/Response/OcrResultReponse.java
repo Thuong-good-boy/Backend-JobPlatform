@@ -5,5 +5,5 @@ import lombok.Data;
 @Data
 public  class OcrResultReponse {
     private String taxCode;
-    private String companyName;
+    private String website;
 }

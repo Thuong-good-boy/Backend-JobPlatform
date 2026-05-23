@@ -8,15 +8,18 @@ import com.jobplatform.job_recruitment_system.models.Candidate;
 import com.jobplatform.job_recruitment_system.models.Company;
 import com.jobplatform.job_recruitment_system.models.Job;
 import com.jobplatform.job_recruitment_system.models.ReportReasons;
+import com.jobplatform.job_recruitment_system.repositories.CandidateRepository;
 import com.jobplatform.job_recruitment_system.services.*;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +35,8 @@ public class CandidateController {
      private final JobService jobService;
      private  final CompanyService companyService;
      private  final ReportReasonsService reasonsService;
+    private  final  AiOcrService aiOcrService;
+    private  final CandidateRepository candidateRepository;
     @PostMapping("/profile")
     public ResponseEntity<?> updateProfile( @RequestBody Candidate profile) {
         try {
@@ -66,12 +71,46 @@ public class CandidateController {
         System.out.println("company o: "+  companyId);
         Page<Job> list = jobService.getalljobforcompany(companyId, page, size);
         Company company = companyService.getCompanyById(companyId);
-        List<ReportReasons> reportReasonsList = reasonsService.getReportCompany();
         return ResponseEntity.ok(Map.of(
-                "report",reportReasonsList,
                 "data", list,
                 "company",company));
 
     }
+    @PostMapping("/sync-reactive-resume")
+    public ResponseEntity<?> syncCvToReactiveResume(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body("File không được để trống!");
+        }
+        try {
+            String reactiveResumeJson = aiOcrService.extractForReactiveResume(file);
+            return ResponseEntity.ok(reactiveResumeJson);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(e.getMessage());
+        }
+    }
+    @PostMapping("/evaluate-cv-url")
+    public ResponseEntity<?> evaluateCvByUrl(@RequestBody Map<String, String> requestData) {
+        String cvUrl = requestData.get("cv_url");
+
+        if (cvUrl == null || cvUrl.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Link CV không được để trống!");
+        }
+
+        try {
+            Long userId = userService.getCurrentUserId();
+            Candidate candidate = candidateService.getProfile(userId);
+            candidate.setAiPoints(candidate.getAiPoints()-1);
+            candidateRepository.save(candidate);
+            String feedbackJson = aiOcrService.evaluateCvFromUrl(cvUrl);
+            return ResponseEntity.ok(feedbackJson);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Đã xảy ra lỗi khi tải hoặc phân tích CV: " + e.getMessage());
+        }
+    }
+
 
 }

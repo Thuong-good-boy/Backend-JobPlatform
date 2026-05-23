@@ -1,19 +1,30 @@
 package com.jobplatform.job_recruitment_system.services;
 
+import com.jobplatform.job_recruitment_system.dtos.request.SendEmailRequest;
 import com.jobplatform.job_recruitment_system.enums.ReportStatus;
+import com.jobplatform.job_recruitment_system.models.Company;
+import com.jobplatform.job_recruitment_system.models.User;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class EmailService {
 
     @Autowired
     private JavaMailSender mailSender;
-
+    @Autowired
+    @Lazy
+    private UserService userService;
+    @Async
     public void sendOtpEmail(String toEmail, String otpCode) throws MessagingException {
 
         String verifyLink = "http://localhost:5173/register-verify?email="
@@ -49,6 +60,7 @@ public class EmailService {
 
         mailSender.send(message);
     }
+    @Async
     public void sendForgotPasswordEmail(String toEmail, String otpCode) throws MessagingException {
 
         String resetLink = "http://localhost:5173/forgot-password-verify?email=" + toEmail  + "&code=" + otpCode;
@@ -87,6 +99,7 @@ public class EmailService {
         helper.setText(htmlContent, true);
         mailSender.send(message);
     }
+    @Async
     public void sendReportFeedbackEmail(String toEmail, String reporterName, Long reportId,
                                         String targetTypeString, String reasonTitle,
                                         ReportStatus status, String adminNote) throws MessagingException {
@@ -288,6 +301,26 @@ public class EmailService {
                         + "</div>";
 
         helper.setText(htmlContent, true);
+        mailSender.send(message);
+    }
+    @Async
+    public void sendInterviewEmail(SendEmailRequest request) throws Exception {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        helper.setTo(request.getEmail());
+        helper.setSubject(request.getSubject());
+        String htmlBody = request.getBody().replace("\n", "<br>");
+        helper.setText(htmlBody, true);
+        helper.setFrom("email.he.thong.cua.ban@gmail.com", "Hệ thống JobPlatform");
+
+        if ("company".equalsIgnoreCase(request.getSenderType())) {
+            Long UserId = userService.getCurrentUserId();
+            User user = userService.getReferenceById(UserId);
+            helper.setReplyTo(user.getEmail());
+        } else {
+            helper.setReplyTo("noreply@jobplatform.com");
+        }
+
         mailSender.send(message);
     }
 

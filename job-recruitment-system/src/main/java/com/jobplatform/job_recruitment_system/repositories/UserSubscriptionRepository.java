@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+
 @Repository
 public interface UserSubscriptionRepository  extends JpaRepository<UserSubscription, Long> {
     @Query(value = """
@@ -19,7 +21,8 @@ public interface UserSubscriptionRepository  extends JpaRepository<UserSubscript
          AND u.end_date >= CURRENT_TIMESTAMP
    );""",nativeQuery = true)
     boolean userispro(@Param("userId") Long userId);
-
+    @Query("select u.endDate  from UserSubscription u where u.user.id =:userId")
+    LocalDateTime getProEnd(@Param("userId") Long userId);
     @Query("""
     SELECT us FROM UserSubscription us
     WHERE us.user.id = :userId

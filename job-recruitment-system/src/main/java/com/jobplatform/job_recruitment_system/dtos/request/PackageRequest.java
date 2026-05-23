@@ -35,10 +35,17 @@ public class PackageRequest {
     private Integer applyLimit;
 
     @NotNull(message = "Giới hạn lượt đăng tin không được để trống")
-    @Min(value = 0, message = "Giới hạn đăng/đẩy tin không được là số âm")
+    @Min(value = 0, message = "Giới hạn đẩy tin không được là số âm")
     @JsonProperty("job_post_limit")
     private Integer jobPostLimit;
-
+    @NotNull(message = "Giới hạn lượt xem cv không được để trống")
+    @Min(value = 0, message = "Giới hạn xem cv không được là số âm")
+    @JsonProperty("cv_view_limit")
+    private Integer cvViewLimit;
+    @NotNull(message = "Giới hạn lượt xem cv không được để trống")
+    @Min(value = 0, message = "Giới hạn xem cv không được là số âm")
+    @JsonProperty("points_granted")
+    private Integer pointsGranted;
     @NotNull(message = "Trạng thái không được để trống")
     private PackageStatus status;
 }

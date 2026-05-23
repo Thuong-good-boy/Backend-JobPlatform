@@ -4,8 +4,12 @@ import com.jobplatform.job_recruitment_system.dtos.Response.*;
 import com.jobplatform.job_recruitment_system.dtos.request.CompanyOnboardingRequest;
 import com.jobplatform.job_recruitment_system.dtos.request.ReportSubmitRequest;
 import com.jobplatform.job_recruitment_system.dtos.request.UpDateProfileCompanyRequest;
+import com.jobplatform.job_recruitment_system.exceptions.AppException;
+import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
 import com.jobplatform.job_recruitment_system.models.Company;
+import com.jobplatform.job_recruitment_system.models.Cv;
 import com.jobplatform.job_recruitment_system.models.ReportReasons;
+import com.jobplatform.job_recruitment_system.models.User;
 import com.jobplatform.job_recruitment_system.services.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -34,9 +38,8 @@ public class CompanyController {
 
     private final CompanyService companyService;
     private  final CandidateService candidateService;
-    private  final ReportReasonsService reasonsService;
-
-
+    private  final CvService cvService;
+    private  final UnlockedCvService unlockedCvService;
 
     @PostMapping(value = "/onboarding", consumes = {"multipart/form-data"})
     public ResponseEntity<?> onboardingCompany(
@@ -86,10 +89,7 @@ public class CompanyController {
         return ResponseEntity.ok(companyService.getTopCompanies());
     }
 
-    @GetMapping("/search")
-    public ResponseEntity<List<TopCompanyResponse>> searchCompanies(@RequestParam("keyword") String keyword) {
-        return ResponseEntity.ok(companyService.searchCompanies(keyword));
-    }
+
     @GetMapping("/candidate/search")
     public  ResponseEntity<?> searchCandites(
             @RequestParam(required = false) String keyword,
@@ -104,12 +104,22 @@ public class CompanyController {
     public ResponseEntity<?> getCandidateForCompany(
             @RequestBody Map<String, Long> request
     ) {
-        Long id= request.get("id");
-        List<ReportReasons> reportReasonsList = reasonsService.getReportCandidate();
+        Long id = request.get("id");
+        User user = candidateService.getUserByCandidateID(id);
         CandidateProfileResponse response = candidateService.getCandidateForcompany(id);
-        return ResponseEntity.ok(
-                Map.of("data",response, "reportReason",reportReasonsList)
-        );
+        Cv cv = cvService.getFirstCv(user.getId()).orElse(null);
+        Boolean isUnlock= unlockedCvService.checkUnLockViewCandidate(id);
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", response);
+        result.put("cv", isUnlock?cv.getFileUrl():null);
+        result.put("isUnBlock",isUnlock);
+
+        return ResponseEntity.ok(result);
+    }
+    @PostMapping("/unlock-cv")
+    public  ResponseEntity<?> unCLockCadiDate(@RequestBody Map<String, Long> request){
+        Integer countViews= unlockedCvService.unCLockCadiDate(request.get("id"));
+        return  ResponseEntity.ok(Map.of("countViews",countViews));
     }
 
 

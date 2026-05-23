@@ -44,4 +44,6 @@ public class Company {
     private String logoUrl;
     @Column(name = "remaining_boosts")
     private  Integer remainingBoosts;
+    @Column(name = "remaining_cv_views")
+    private  Integer remainingCvViews;
 }

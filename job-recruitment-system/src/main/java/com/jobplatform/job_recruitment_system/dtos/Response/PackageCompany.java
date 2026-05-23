@@ -11,5 +11,6 @@ public class PackageCompany {
     private  String name;
     private  Integer durationDays;
     private  Integer jobPostLimit;
+    private  Integer cvViewLimit;
     private BigDecimal price;
 }

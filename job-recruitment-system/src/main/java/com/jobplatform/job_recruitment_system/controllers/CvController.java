@@ -1,5 +1,6 @@
 package com.jobplatform.job_recruitment_system.controllers;
 
+import com.jobplatform.job_recruitment_system.models.Candidate;
 import com.jobplatform.job_recruitment_system.models.Cv;
 
 import com.jobplatform.job_recruitment_system.models.User;
@@ -19,6 +20,7 @@ public class CvController {
 
     private final CvService cvService;
     private final UserService userService;
+    private  final CandidateService candidateService;
 
     @PostMapping("/upload")
     public ResponseEntity<?> upload(
@@ -31,8 +33,10 @@ public class CvController {
     }
 
     @GetMapping("/my-cvs")
-    public ResponseEntity<List<Cv>> getList() {
-        return ResponseEntity.ok(cvService.getMyActiveCvs());
+    public ResponseEntity<?> getList() {
+        List<Cv> cvList = cvService.getMyActiveCvs();
+        Integer aiPoints = candidateService.getAiPoints();
+        return ResponseEntity.ok(Map.of("aiPoints", aiPoints,"cvList", cvList));
     }
 
     @DeleteMapping("/{id}")

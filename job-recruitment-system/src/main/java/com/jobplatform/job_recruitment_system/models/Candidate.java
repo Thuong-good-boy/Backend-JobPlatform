@@ -40,7 +40,8 @@ public class Candidate {
 
     @Column(name = "is_public")
     private Boolean isPublic = false;
-
+    @Column(name = "ai_points")
+    private Integer aiPoints = 0;
     @UpdateTimestamp
     @Column(name = "updated_at")
     private ZonedDateTime updatedAt;

@@ -10,6 +10,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,11 +19,14 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface JobRepository extends JpaRepository<Job, Long> {
+public interface JobRepository extends JpaRepository<Job, Long> , RevisionRepository<Job, Long, Integer> {
 
     @Query("select j from Job j where j.company.id = :companyId")
     Page<Job> findByJCompanyId(Pageable pageable, @Param("companyId") Long companyId);
-
+    @Modifying
+    @Transactional
+    @Query("UPDATE Job j SET j.viewCount = COALESCE(j.viewCount, 0) + 1 WHERE j.id IN :jobIds")
+    void incrementViewCountForJobs(@Param("jobIds") List<Long> jobIds);
     @Query(value = """
      SELECT * FROM jobs
          WHERE (pinning_until < CURRENT_TIMESTAMP OR is_pinning = false OR is_pinning IS NULL)
@@ -37,10 +41,13 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 """, nativeQuery = true)
     Slice<Job> fillAllJobsPro(Pageable pageable);
     @Query("""
-        select j from Job j where j.title like %:search% and j.status = :status
+        select j from Job j where j.title like %:search% and j.status = :status order by j.createdAt desc
     """)
-    Page<Job> findAllForAdmin(Pageable pageable, @Param("search") String search, @Param("status") JobStatus status);
-
+    Page<Job> findAllByStatusForAdmin(Pageable pageable, @Param("search") String search, @Param("status") JobStatus status);
+    @Query("""
+        select j from Job j order by j.createdAt desc
+    """)
+    Page<Job> findAllForAdmin(Pageable pageable);
     @Query(value = """
         SELECT * FROM jobs 
         WHERE (:keyword IS NULL 
@@ -63,7 +70,7 @@ public interface JobRepository extends JpaRepository<Job, Long> {
         OR TRIM(:keyword) = '' 
         OR search_vector @@ plainto_tsquery('simple', :keyword))
         """, nativeQuery = true)
-    Page<Job> searchJobs(@Param("keyword") String keyword, Pageable pageable);
+    Slice<Job> searchJobs(@Param("keyword") String keyword, Pageable pageable);
 
     @Query("SELECT j FROM Job j WHERE j.company.id = ?1 ORDER BY j.createdAt DESC")
     List<Job> findByCompanyIdCustom(Long companyId);
@@ -148,4 +155,25 @@ public interface JobRepository extends JpaRepository<Job, Long> {
     @Modifying
     @Query("UPDATE Job j SET j.isTrending = false WHERE j.isTrending = true AND j.trendingUntil < CURRENT_TIMESTAMP")
     int resetExpiredTrendingJobs();
+
+    @Query(value = """
+    SELECT * FROM jobs 
+    WHERE pinning_until > CURRENT_TIMESTAMP 
+      AND status = 'OPEN'
+      AND search_vector @@ to_tsquery('simple', :skillQuery)
+    ORDER BY 
+      ts_rank(search_vector, to_tsquery('simple', :skillQuery)) DESC,
+      last_boosted_at DESC
+    LIMIT 3
+""", nativeQuery = true)
+    List<Job> findTop3ProJobsBySkills(@Param("skillQuery") String skillQuery);
+
+    @Query(value = """
+    SELECT * FROM jobs 
+    WHERE pinning_until > CURRENT_TIMESTAMP 
+      AND status = 'OPEN'
+    ORDER BY last_boosted_at DESC
+    LIMIT 3
+""", nativeQuery = true)
+    List<Job> findTop3ProJobsRoundRobin();
 }

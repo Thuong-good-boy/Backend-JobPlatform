@@ -58,4 +58,6 @@ public interface CvRepository extends JpaRepository<Cv, Long> {
     @Query(value = "select * from cvs where user_id = :userId limit 1", nativeQuery = true)
     Optional<Cv> getCvByUserId(@Param("userId") Long userId);
 
+
+
 }
