@@ -68,6 +68,12 @@ public class Job {
     private Company company;
     @Column(name = "last_boosted_at")
     private LocalDateTime lastBoostedAt;
+    @Column(name ="weight_skill")
+    private double weightSkill;
+    @Column(name = "weight_experience")
+    private double weightExperience;
+    @Column(name = "weight_education")
+    private double weightEducation;
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "job_skills",

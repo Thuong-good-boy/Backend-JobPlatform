@@ -2,6 +2,7 @@ package com.jobplatform.job_recruitment_system.controllers;
 
 
 import com.jobplatform.job_recruitment_system.dtos.Response.LoginResponse;
+import com.jobplatform.job_recruitment_system.dtos.Response.UserResponse;
 import com.jobplatform.job_recruitment_system.dtos.request.*;
 import com.jobplatform.job_recruitment_system.exceptions.AppException;
 import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
@@ -136,6 +137,21 @@ public class AuthController {
     public  ResponseEntity<?> getUserCurrentId(){
         Long userId= userService.getCurrentUserId();
         return  ResponseEntity.ok(Map.of("userId",userId));
+    }
+    @GetMapping("/me")
+    public ResponseEntity<?> getMe(@RequestHeader("Authorization") String authHeader) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Missing or invalid token");
+            }
+
+            String token = authHeader.substring(7);
+           UserResponse user = userService.getUserResponse(token);
+
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+        }
     }
 
 

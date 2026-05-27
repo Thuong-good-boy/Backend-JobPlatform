@@ -3,6 +3,7 @@ package com.jobplatform.job_recruitment_system.services;
 import com.jobplatform.job_recruitment_system.dtos.Response.AiBreakdownResultResponse;
 import com.jobplatform.job_recruitment_system.dtos.Response.MatchResultReponse;
 import com.jobplatform.job_recruitment_system.dtos.Response.OcrResultReponse;
+import com.jobplatform.job_recruitment_system.models.Job;
 import com.jobplatform.job_recruitment_system.repositories.SkillRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -116,10 +117,10 @@ public class AiOcrService {
         return extractJsonFromResponse(response);
     }
 
-    public MatchResultReponse calculateMatchScore(String cvJsonData, String jobDescription) {
+    public MatchResultReponse calculateMatchScore(String cvJsonData, Job job) {
         String prompt = "Bạn là một chuyên gia nhân sự (HR). Hãy phân tích mức độ phù hợp giữa CV và Yêu cầu công việc (JD).\n\n" +
                 "--- THÔNG TIN CV (JSON) ---\n" + cvJsonData + "\n\n" +
-                "--- YÊU CẦU CÔNG VIỆC ---\n" + jobDescription + "\n\n" +
+                "--- YÊU CẦU CÔNG VIỆC ---\n" + job.getDescription() + "\n\n" +
                 "Yêu cầu đánh giá chi tiết theo tiêu chí:\n" +
                 "1. skillScore: Chấm từ 0.0 đến 100.0 dựa trên mức độ trùng khớp của kỹ năng cứng/mềm.\n" +
                 "2. experienceScore: Chấm từ 0.0 đến 100.0 dựa trên số năm kinh nghiệm và vị trí tương đương.\n" +
@@ -137,9 +138,9 @@ public class AiOcrService {
 
         AiBreakdownResultResponse breakdown = callAiAndParseJson(requestBody, AiBreakdownResultResponse.class);
 
-        double weightSkill = 0.5;
-        double weightExperience = 0.4;
-        double weightEducation = 0.1;
+        double weightSkill = job.getWeightSkill();
+        double weightExperience = job.getWeightExperience();
+        double weightEducation = job.getWeightEducation();
 
         double finalScore = (breakdown.getSkillScore() * weightSkill) +
                 (breakdown.getExperienceScore() * weightExperience) +
@@ -191,59 +192,6 @@ public class AiOcrService {
         Map<String, Object> response = sendRequestToOpenRouter(requestBody);
         return extractJsonFromResponse(response);
     }
-    public String extractForReactiveResume(MultipartFile file) throws IOException {
-        String base64Image = Base64.getEncoder().encodeToString(file.getBytes());
-        String dataUrl = "data:" + file.getContentType() + ";base64," + base64Image;
-
-            String prompt = "Bạn là chuyên gia nhân sự. Hãy trích xuất toàn bộ thông tin từ CV sau và định dạng chuẩn theo cấu trúc JSON của Reactive Resume v4.\n" +
-                "Cấu trúc JSON yêu cầu tối thiểu như sau (nếu CV không có thông tin thì để mảng rỗng [] hoặc chuỗi rỗng \"\"):\n" +
-                "{\n" +
-                "  \"basics\": {\n" +
-                "    \"name\": \"Họ và tên\",\n" +
-                "    \"email\": \"\",\n" +
-                "    \"phone\": \"\",\n" +
-                "    \"location\": \"\",\n" +
-                "    \"summary\": \"Tóm tắt\"\n" +
-                "  },\n" +
-                "  \"work\": [\n" +
-                "    {\n" +
-                "      \"company\": \"Tên công ty\",\n" +
-                "      \"position\": \"Vị trí\",\n" +
-                "      \"date\": \"Thời gian làm việc\",\n" +
-                "      \"summary\": \"Mô tả công việc\"\n" +
-                "    }\n" +
-                "  ],\n" +
-                "  \"education\": [\n" +
-                "    {\n" +
-                "      \"institution\": \"Tên trường\",\n" +
-                "      \"studyType\": \"Bằng cấp\",\n" +
-                "      \"area\": \"Chuyên ngành\",\n" +
-                "      \"date\": \"Thời gian học\"\n" +
-                "    }\n" +
-                "  ],\n" +
-                "  \"skills\": [\n" +
-                "    {\n" +
-                "      \"name\": \"Tên kỹ năng\",\n" +
-                "      \"level\": \"Basic/Intermediate/Advanced\"\n" +
-                "    }\n" +
-                "  ]\n" +
-                "}\n" +
-                "Chỉ trả về đúng code JSON hợp lệ, không dùng Markdown, không giải thích gì thêm.";
-
-        Map<String, Object> requestBody = Map.of(
-                "model", "google/gemini-2.0-flash-001",
-                "messages", List.of(
-                        Map.of("role", "user", "content", List.of(
-                                Map.of("type", "text", "text", prompt),
-                                Map.of("type", "image_url", "image_url", Map.of("url", dataUrl))
-                        ))
-                )
-        );
-
-        Map<String, Object> response = sendRequestToOpenRouter(requestBody);
-        return extractJsonFromResponse(response);
-    }
-
     private Map<String, Object> sendRequestToOpenRouter(Map<String, Object> body) {
         RestTemplate restTemplate = new RestTemplate();
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, createOpenRouterHeaders());

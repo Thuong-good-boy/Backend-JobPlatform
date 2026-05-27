@@ -40,12 +40,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        // 1. Lấy chuỗi Authorization từ Header của request
         final String authHeader = request.getHeader("Authorization");
 
-        // 2. KIỂM TRA QUAN TRỌNG:
-        // Nếu không có header này, hoặc không bắt đầu bằng "Bearer ",
-        // thì cho qua luôn (ủy quyền chặn/mở lại cho SecurityConfig quyết định)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;

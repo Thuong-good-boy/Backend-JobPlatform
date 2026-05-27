@@ -7,6 +7,7 @@ import com.jobplatform.job_recruitment_system.dtos.Response.SummaryReponse;
 import com.jobplatform.job_recruitment_system.exceptions.AppException;
 import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
 import com.jobplatform.job_recruitment_system.models.Application;
+import com.jobplatform.job_recruitment_system.models.Company;
 import com.jobplatform.job_recruitment_system.models.SavedJob;
 import com.jobplatform.job_recruitment_system.repositories.ApplicationRepository;
 import com.jobplatform.job_recruitment_system.repositories.CompanyRepository;
@@ -43,11 +44,13 @@ public class SummaryService {
     }
     public List<ChartDataResponse> get7ngay(){
         Long userid =userService.getCurrentUserId();
-        return  applicationRepository.totalApplicationsin7day(userid);
+        Long companyId = companyRepository.getCompanyId(userid);
+        return  applicationRepository.totalApplicationsin7day(companyId);
     }
     public  List<RecentApplicationReponse> getRecentApplicationReponse(){
         Long userid =userService.getCurrentUserId();
-        return  applicationRepository.getTop5RecentApplications(userid);
+        Long companyId = companyRepository.getCompanyId(userid);
+        return  applicationRepository.getTop5RecentApplications(companyId);
     }
 
 }

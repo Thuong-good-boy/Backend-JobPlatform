@@ -110,7 +110,9 @@ public class JobController {
     @PostMapping("/{jobId}/apply")
     public ResponseEntity<?> applyJob(@PathVariable @NotNull(message = "JOB_REQUIRED") Long jobId) {
         try {
-             applicationService.applyForJob(jobId);
+            Long userId= userService.getCurrentUserId();
+            boolean isPro = userService.getCurrentUserIsPro();
+             applicationService.applyForJob(jobId,userId, isPro);
             return ResponseEntity.ok("Ứng tuyển thành công!");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

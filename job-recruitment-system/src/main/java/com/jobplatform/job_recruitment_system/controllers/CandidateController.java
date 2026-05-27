@@ -76,20 +76,7 @@ public class CandidateController {
                 "company",company));
 
     }
-    @PostMapping("/sync-reactive-resume")
-    public ResponseEntity<?> syncCvToReactiveResume(@RequestParam("file") MultipartFile file) {
-        if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body("File không được để trống!");
-        }
-        try {
-            String reactiveResumeJson = aiOcrService.extractForReactiveResume(file);
-            return ResponseEntity.ok(reactiveResumeJson);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(e.getMessage());
-        }
-    }
+
     @PostMapping("/evaluate-cv-url")
     public ResponseEntity<?> evaluateCvByUrl(@RequestBody Map<String, String> requestData) {
         String cvUrl = requestData.get("cv_url");

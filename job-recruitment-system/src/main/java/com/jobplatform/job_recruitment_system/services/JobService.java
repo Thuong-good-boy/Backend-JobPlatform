@@ -283,11 +283,12 @@ public class JobService {
             throw new AppException(ErrorCode.JOB_005);
         }
          job.setStatus(newStatus);
-
-
         Job jobnew =  jobRepository.save(job);
+        if(newStatus.equals(JobStatus.OPEN)){
+            aiMatchingService.processNewJob(jobnew);
+        }
         Company companyProfile = jobnew.getCompany();
-        aiMatchingService.processNewJob(jobnew);
+
         NotificationType type;
         if(JobStatus.OPEN.equals(newStatus)){
            type = NotificationType.JOB_CHANGE_STATUS;

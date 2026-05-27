@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-05-23T10:14:34+0700",
+    date = "2026-05-27T08:06:48+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.6 (Oracle Corporation)"
 )
 @Component
@@ -27,6 +27,9 @@ public class JobMapperImpl implements JobMapper {
         job.setSalaryMin( jobPostRequest.getSalaryMin() );
         job.setSalaryMax( jobPostRequest.getSalaryMax() );
         job.setLocation( jobPostRequest.getLocation() );
+        job.setWeightSkill( jobPostRequest.getWeightSkill() );
+        job.setWeightExperience( jobPostRequest.getWeightExperience() );
+        job.setWeightEducation( jobPostRequest.getWeightEducation() );
 
         return job;
     }
@@ -42,6 +45,9 @@ public class JobMapperImpl implements JobMapper {
         target.setSalaryMin( source.getSalaryMin() );
         target.setSalaryMax( source.getSalaryMax() );
         target.setLocation( source.getLocation() );
+        target.setWeightSkill( source.getWeightSkill() );
+        target.setWeightExperience( source.getWeightExperience() );
+        target.setWeightEducation( source.getWeightEducation() );
     }
 
     @Override

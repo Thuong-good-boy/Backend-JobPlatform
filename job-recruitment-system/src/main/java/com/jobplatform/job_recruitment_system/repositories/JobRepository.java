@@ -157,16 +157,37 @@ public interface JobRepository extends JpaRepository<Job, Long> , RevisionReposi
     int resetExpiredTrendingJobs();
 
     @Query(value = """
-    SELECT * FROM jobs 
-    WHERE pinning_until > CURRENT_TIMESTAMP 
-      AND status = 'OPEN'
-      AND search_vector @@ to_tsquery('simple', :skillQuery)
-    ORDER BY 
-      ts_rank(search_vector, to_tsquery('simple', :skillQuery)) DESC,
-      last_boosted_at DESC
-    LIMIT 3
+    (
+        SELECT *
+        FROM jobs
+        WHERE pinning_until > CURRENT_TIMESTAMP
+          AND status = 'OPEN'
+          AND search_vector @@ to_tsquery('simple', :skillQuery)
+        ORDER BY
+          ts_rank(search_vector, to_tsquery('simple', :skillQuery)) DESC,
+          last_boosted_at DESC
+        LIMIT 3
+    )
+    UNION ALL
+    (
+        SELECT *
+        FROM jobs
+        WHERE pinning_until > CURRENT_TIMESTAMP
+          AND status = 'OPEN'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM jobs j
+              WHERE j.pinning_until > CURRENT_TIMESTAMP
+                AND j.status = 'OPEN'
+                AND j.search_vector @@ to_tsquery('simple', :skillQuery)
+          )
+        ORDER BY last_boosted_at DESC
+        LIMIT 3
+    )
 """, nativeQuery = true)
-    List<Job> findTop3ProJobsBySkills(@Param("skillQuery") String skillQuery);
+    List<Job> findTop3ProJobsBySkills(
+            @Param("skillQuery") String skillQuery
+    );
 
     @Query(value = """
     SELECT * FROM jobs 

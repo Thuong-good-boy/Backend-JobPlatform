@@ -14,6 +14,7 @@ import java.util.List;
 public class SkillService {
     private  final SkillRepository skillRepository;
     public List<Skill> getall(){
+
         return  skillRepository.findAll();
     }
     public  void create(String nameSkill){

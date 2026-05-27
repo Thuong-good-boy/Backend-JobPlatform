@@ -25,4 +25,7 @@ public class JobPostRequest {
     @NotEmpty(message = "SKILLS_REQUIRED")
     @Size(max = 10, message = "MAX_10_SKILLS_ALLOWED")
     private List<@NotBlank(message = "SKILL_NAME_CANNOT_BE_BLANK")String> skillNames;
+    private double weightSkill;
+    private double weightExperience;
+    private double weightEducation;
 }

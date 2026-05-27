@@ -8,6 +8,7 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.jobplatform.job_recruitment_system.config.CustomUserDetails;
 import com.jobplatform.job_recruitment_system.dtos.Response.AdminUserResponse;
 import com.jobplatform.job_recruitment_system.dtos.Response.LoginResponse;
+import com.jobplatform.job_recruitment_system.dtos.Response.UserResponse;
 import com.jobplatform.job_recruitment_system.dtos.request.*;
 import com.jobplatform.job_recruitment_system.exceptions.AppException;
 import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
@@ -435,5 +436,9 @@ public class UserService {
         if (email == null) return null;
         return email.substring(0, 2) + "***@" + email.split("@")[1];
     }
-
+    public UserResponse getUserResponse(String token){
+        Long userId = jwtService.extractId(token);
+        User user = userRepository.getReferenceById(userId);
+        return  userMapper.toUserResponse(user);
+    }
 }

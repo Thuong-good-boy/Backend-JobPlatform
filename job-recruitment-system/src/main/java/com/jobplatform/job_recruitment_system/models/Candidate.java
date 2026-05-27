@@ -45,6 +45,7 @@ public class Candidate {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private ZonedDateTime updatedAt;
+
     @JsonProperty("fullName")
     public String getFullName() {
         return this.user != null ? this.user.getFullName() : null;

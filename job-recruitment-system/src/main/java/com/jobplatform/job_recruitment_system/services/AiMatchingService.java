@@ -54,7 +54,7 @@ public class AiMatchingService {
     @Async
     public void calculateAndSave(Cv cv, Job job) {
         try {
-            MatchResultReponse result = aiOcrService.calculateMatchScore(cv.getCvData(), job.getDescription());
+            MatchResultReponse result = aiOcrService.calculateMatchScore(cv.getCvData(), job);
 
             if (result == null) return;
 

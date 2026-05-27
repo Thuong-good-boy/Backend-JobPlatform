@@ -23,41 +23,42 @@ public interface CandidateRepository extends JpaRepository<Candidate, Long> {
     @Query("select c.id from Candidate c where c.user.id=:userId")
     Long getCandidateIdByUSerId(@Param("userId") Long userId);
     @Query(value = """
-        SELECT c.* FROM candidates c
-        JOIN (
-            SELECT *, ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY created_at DESC) as rn
-            FROM cvs
-        ) cv ON c.user_id = cv.user_id AND cv.rn = 1
-        WHERE c.is_public = true
-        AND (CAST(:location AS text) IS NULL OR c.location ILIKE CONCAT('%', CAST(:location AS text), '%'))
-        AND (CAST(:minExp AS integer) IS NULL OR c.experience_years >= CAST(:minExp AS integer))
-        AND (CAST(:keyword AS text) IS NULL OR 
-             c.title ILIKE CONCAT('%', CAST(:keyword AS text), '%') OR 
-             cv.cv_data->>'summary' ILIKE CONCAT('%', CAST(:keyword AS text), '%')
-        )
-        AND (
-            CAST(:skillsJson AS text) IS NULL 
-            OR cv.cv_data @> CAST(:skillsJson AS jsonb)
-        )  
-        """,
+    SELECT c.* FROM candidates c
+    JOIN (
+        SELECT *, ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY created_at DESC) as rn
+        FROM cvs
+    ) cv ON c.user_id = cv.user_id AND cv.rn = 1
+    WHERE c.is_public = true
+    AND (CAST(:location AS text) IS NULL OR c.location ILIKE CONCAT('%', CAST(:location AS text), '%'))
+    AND (CAST(:minExp AS integer) IS NULL OR c.experience_years >= CAST(:minExp AS integer))
+    AND (CAST(:keyword AS text) IS NULL OR 
+         c.title ILIKE CONCAT('%', CAST(:keyword AS text), '%') OR 
+         cv.cv_data->>'summary' ILIKE CONCAT('%', CAST(:keyword AS text), '%')
+    )
+    AND (
+        CAST(:skillsJson AS text) IS NULL 
+        OR cv.cv_data @> CAST(:skillsJson AS jsonb)
+    )  
+    """,
             countQuery = """
-        SELECT count(c.id) FROM candidates c
-        JOIN (
-            SELECT user_id, ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY created_at DESC) as rn
-            FROM cvs
-        ) cv ON c.user_id = cv.user_id AND cv.rn = 1
-        WHERE c.is_public = true
-        AND (CAST(:location AS text) IS NULL OR c.location ILIKE CONCAT('%', CAST(:location AS text), '%'))
-        AND (CAST(:minExp AS integer) IS NULL OR c.experience_years >= CAST(:minExp AS integer))
-        AND (CAST(:keyword AS text) IS NULL OR 
-             c.title ILIKE CONCAT('%', CAST(:keyword AS text), '%') OR 
-             cv.cv_data->>'summary' ILIKE CONCAT('%', CAST(:keyword AS text), '%')
-        )
-        AND (
-            CAST(:skillsJson AS text) IS NULL 
-            OR cv.cv_data @> CAST(:skillsJson AS jsonb)
-        )
-        """,
+    SELECT count(c.id) FROM candidates c
+    JOIN (
+        -- ĐÃ SỬA DÒNG BÊN DƯỚI: Thêm cv_data vào SELECT
+        SELECT user_id, cv_data, ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY created_at DESC) as rn
+        FROM cvs
+    ) cv ON c.user_id = cv.user_id AND cv.rn = 1
+    WHERE c.is_public = true
+    AND (CAST(:location AS text) IS NULL OR c.location ILIKE CONCAT('%', CAST(:location AS text), '%'))
+    AND (CAST(:minExp AS integer) IS NULL OR c.experience_years >= CAST(:minExp AS integer))
+    AND (CAST(:keyword AS text) IS NULL OR 
+         c.title ILIKE CONCAT('%', CAST(:keyword AS text), '%') OR 
+         cv.cv_data->>'summary' ILIKE CONCAT('%', CAST(:keyword AS text), '%')
+    )
+    AND (
+        CAST(:skillsJson AS text) IS NULL 
+        OR cv.cv_data @> CAST(:skillsJson AS jsonb)
+    )
+    """,
             nativeQuery = true)
     Page<Candidate> searchCandidates(
             @Param("location") String location,
