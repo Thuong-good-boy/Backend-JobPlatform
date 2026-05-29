@@ -59,5 +59,12 @@ public interface CvRepository extends JpaRepository<Cv, Long> {
     Optional<Cv> getCvByUserId(@Param("userId") Long userId);
 
 
-
+    @Query(value = """
+    SELECT c.* FROM cvs c 
+    WHERE c.is_pro = true -- Hoặc điều kiện cv pro của bạn
+      AND c.search_vector @@ websearch_to_tsquery('simple', :jobSkillsQuery)
+    ORDER BY ts_rank(c.search_vector, websearch_to_tsquery('simple', :jobSkillsQuery)) DESC
+    LIMIT 10
+    """, nativeQuery = true)
+    List<Cv> findTop10MatchingCvs(@Param("jobSkillsQuery") String jobSkillsQuery);
 }

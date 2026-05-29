@@ -27,7 +27,7 @@ public class EmailService {
     @Async
     public void sendOtpEmail(String toEmail, String otpCode) throws MessagingException {
 
-        String verifyLink = "http://localhost:5173/register-verify?email="
+        String verifyLink = "https://pathuongdev.id.vn/register-verify?email="
                 + toEmail + "&code=" + otpCode;
 
         MimeMessage message = mailSender.createMimeMessage();
@@ -63,7 +63,7 @@ public class EmailService {
     @Async
     public void sendForgotPasswordEmail(String toEmail, String otpCode) throws MessagingException {
 
-        String resetLink = "http://localhost:5173/forgot-password-verify?email=" + toEmail  + "&code=" + otpCode;
+        String resetLink = "https://pathuongdev.id.vn/forgot-password-verify?email=" + toEmail  + "&code=" + otpCode;
 
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");

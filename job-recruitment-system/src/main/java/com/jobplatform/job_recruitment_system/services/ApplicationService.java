@@ -39,7 +39,7 @@ public class  ApplicationService {
     private  final CandidateRepository candidateRepository;
     private  final MatchScoreRepository matchScoreRepository;
     private  final AiMatchingService aiMatchingService;
-    @Async
+
     public void applyForJob(Long jobId , Long userId, Boolean ispro) {
         Job job = jobRepository.getReferenceById(jobId);
         Cv cv = cvRepository.getCvByUserId(userId)
@@ -47,9 +47,6 @@ public class  ApplicationService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.AUTH_008));
-        if(!ispro&& applicationRepository.getCountApply(userId)>=1){
-           throw  new AppException(ErrorCode.NOTPRO_01);
-        }
         try {
         Application app = new Application();
         app.setJob(job);

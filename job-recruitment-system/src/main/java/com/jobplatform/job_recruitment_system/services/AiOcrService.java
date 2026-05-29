@@ -36,7 +36,7 @@ public class AiOcrService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", "Bearer " + apiKey);
-        headers.set("HTTP-Referer", "http://localhost:8080");
+        headers.set("HTTP-Referer", "https://pathuongdev.id.vn");
         headers.set("X-Title", "Job Recruitment System");
         return headers;
     }

@@ -25,4 +25,5 @@ public class ListJobResponse {
     private LocalDateTime trendingUntil;
     private Integer viewCount;
     private Integer clickCount;
+
 }

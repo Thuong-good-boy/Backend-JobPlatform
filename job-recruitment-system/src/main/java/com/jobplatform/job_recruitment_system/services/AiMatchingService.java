@@ -62,7 +62,6 @@ public class AiMatchingService {
             ms.setJob(job);
             ms.setCv(cv);
 
-            // Đảm bảo khởi tạo ID nếu là EmbeddedId
             if (ms.getId() == null) {
                 ms.setId(new MatchScoreId(job.getId(), cv.getId()));
             }
@@ -81,10 +80,36 @@ public class AiMatchingService {
     }
 
     @Async
+
     public void processNewJob(Job job) {
-        List<Cv> allCvs = cvRepository.findCvPro();
-        for (Cv cv : allCvs) {
-            calculateAndSave(cv, job);
+        try {
+            List<String> jobSkills = job.getSkills().stream().map(skill -> skill.getSkillName()).toList();
+
+            if (jobSkills == null || jobSkills.isEmpty()) {
+                log.warn("Job này không có yêu cầu skill nào để đối chiếu!");
+                return;
+            }
+
+            List<String> formattedSkills = new ArrayList<>();
+            for (String skill : jobSkills) {
+                formattedSkills.add("\"" + skill + "\"");
+            }
+            String searchQuery = String.join("OR", formattedSkills);
+            log.info("Từ khóa Job đẩy xuống Postgres để tìm CV: " + searchQuery);
+
+            List<Cv> top10Cvs = cvRepository.findTop10MatchingCvs(searchQuery);
+
+            for (Cv cv : top10Cvs) {
+                try {
+                    calculateAndSave(cv, job);
+
+                    Thread.sleep(5000);
+                } catch (Exception e) {
+                    log.error("Lỗi AI Matching tại CV {}: {}", cv.getId(), e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.error("Lỗi nghiêm trọng trong luồng xử lý Job bất đồng bộ: {}", e.getMessage());
         }
     }
 

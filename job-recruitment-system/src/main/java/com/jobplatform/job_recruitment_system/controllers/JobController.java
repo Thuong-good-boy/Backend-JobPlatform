@@ -43,7 +43,6 @@ public class JobController {
     @GetMapping("/jobpost")
     public ResponseEntity<?> getAllJobsPost(
     ) {
-        System.out.println("Có vào đây ");
         List<Job> jobPro = jobService.getJobsPro();
         return ResponseEntity.ok( jobPro);
     }
@@ -109,14 +108,12 @@ public class JobController {
 
     @PostMapping("/{jobId}/apply")
     public ResponseEntity<?> applyJob(@PathVariable @NotNull(message = "JOB_REQUIRED") Long jobId) {
-        try {
+
             Long userId= userService.getCurrentUserId();
             boolean isPro = userService.getCurrentUserIsPro();
              applicationService.applyForJob(jobId,userId, isPro);
             return ResponseEntity.ok("Ứng tuyển thành công!");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+
     }
 
     @GetMapping("/{jobId}/applied-jobs")

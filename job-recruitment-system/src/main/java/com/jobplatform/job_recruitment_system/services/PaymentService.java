@@ -139,7 +139,6 @@ public class PaymentService {
                 return false;
             }
 
-            // Băm lại bằng Secret Key của mình
             String signValue = vnPayConfig.hmacSHA512(vnPayConfig.secretKey, hashData.toString());
 
             // So sánh 2 chữ ký
@@ -221,13 +220,13 @@ public class PaymentService {
 
 
                         }
-                        response.sendRedirect("http://localhost:5173/payment-success");
+                        response.sendRedirect("https://pathuongdev.id.vn/payment-success");
 
                     } else {
-                        response.sendRedirect("http://localhost:5173/payment-failed?code=" + vnp_ResponseCode);
+                        response.sendRedirect("https://pathuongdev.id.vn/payment-failed?code=" + vnp_ResponseCode);
                     }
                 } else {
-                    response.sendRedirect("http://localhost:5173/payment-error");
+                    response.sendRedirect("https://pathuongdev.id.vn/payment-error");
                 }
             }catch (IOException e){
                 e.printStackTrace();

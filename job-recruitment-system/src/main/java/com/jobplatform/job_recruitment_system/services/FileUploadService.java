@@ -22,7 +22,7 @@ public class FileUploadService {
                         "public_id", UUID.randomUUID().toString(),
                         "resource_type", "auto"
                 ));
-        return uploadResult.get("url").toString();
+        return uploadResult.get("secure_url").toString();
     }
 
 
