@@ -1,11 +1,18 @@
 package com.jobplatform.job_recruitment_system.services;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.jobplatform.job_recruitment_system.dtos.Response.AiBreakdownResultResponse;
 import com.jobplatform.job_recruitment_system.dtos.Response.MatchResultReponse;
 import com.jobplatform.job_recruitment_system.dtos.Response.OcrResultReponse;
+import com.jobplatform.job_recruitment_system.dtos.request.AutoFixRequest;
+import com.jobplatform.job_recruitment_system.dtos.request.CvRequest;
+import com.jobplatform.job_recruitment_system.models.Cv;
 import com.jobplatform.job_recruitment_system.models.Job;
+import com.jobplatform.job_recruitment_system.repositories.CvRepository;
 import com.jobplatform.job_recruitment_system.repositories.SkillRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -13,10 +20,16 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -25,13 +38,14 @@ import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AiOcrService {
 
     @Value("${gemini.api-key}")
     private String apiKey;
     private final SkillRepository skillRepository;
     private final String OPEN_ROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-
+    private  final CvRepository repository;
     private HttpHeaders createOpenRouterHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -92,17 +106,67 @@ public class AiOcrService {
         List<String> systemSkills = skillRepository.getALlSkillName();
         String skillListStr = String.join(", ", systemSkills);
 
-        String prompt = "Bạn là chuyên gia nhân sự. Hãy trích xuất thông tin từ CV sau.\n" +
-                "Cấu trúc JSON yêu cầu:\n" +
+        String prompt = "Bạn là chuyên gia nhân sự và AI trích xuất dữ liệu. Hãy đọc CV đính kèm và trích xuất thông tin ứng viên vào một file JSON.\n\n" +
+                "QUY TẮC TỐI THƯỢNG BẮT BUỘC:\n" +
+                "1. BẠN PHẢI TRẢ VỀ ĐẦY ĐỦ 100% CÁC KEY TRONG CẤU TRÚC BÊN DƯỚI. Tuyệt đối không được bỏ sót bất kỳ key nào.\n" +
+                "2. Nếu CV KHÔNG CÓ thông tin, bắt buộc để chuỗi rỗng \"\" (với text) hoặc mảng rỗng [] (với mảng). KHÔNG được tự bịa dữ liệu.\n" +
+                "3. Ở 'description' của 'experiences' và 'projects', tách các ý thành các phần tử chuỗi trong mảng.\n\n" +
+                "CẤU TRÚC JSON ÉP BUỘC PHẢI TUÂN THEO:\n" +
                 "{\n" +
-                "  \"summary\": \"Tóm tắt ngắn gọn về ứng viên\",\n" +
-                "  \"skills\": [\"Kỹ năng 1\", \"Kỹ năng 2\"],\n" +
-                "  \"education\": \"Thông tin học vấn\",\n" +
-                "  \"experience_years\": số năm kinh nghiệm (kiểu số)\n" +
-                "}\n" +
-                "YÊU CẦU QUAN TRỌNG: Mảng 'skills' CHỈ ĐƯỢC PHÉP chứa các từ khóa nằm trong danh sách chuẩn sau đây. Hãy tự động đối chiếu và chuẩn hóa kỹ năng trong CV cho khớp với danh sách này: [" + skillListStr + "]. Nếu CV có kỹ năng không khớp hoặc không liên quan, hãy bỏ qua.\n" +
-                "Chỉ trả về đúng code JSON, không giải thích gì thêm.";
-
+                "  \"fullName\": \"\",\n" +
+                "  \"jobTitle\": \"\",\n" +
+                "  \"avatarUrl\": \"\",\n" +
+                "  \"phone\": \"\",\n" +
+                "  \"email\": \"\",\n" +
+                "  \"address\": \"\",\n" +
+                "  \"github\": \"\",\n" +
+                "  \"linkedin\": \"\",\n" +
+                "  \"summary\": \"\",\n" +
+                "  \"templateName\": \"\",\n" +
+                "  \"skills\": [],\n" +
+                "  \"experiences\": [\n" +
+                "    {\n" +
+                "      \"role\": \"\",\n" +
+                "      \"company\": \"\",\n" +
+                "      \"duration\": \"\",\n" +
+                "      \"location\": \"\",\n" +
+                "      \"description\": []\n" +
+                "    }\n" +
+                "  ],\n" +
+                "  \"projects\": [\n" +
+                "    {\n" +
+                "      \"name\": \"\",\n" +
+                "      \"role\": \"\",\n" +
+                "      \"duration\": \"\",\n" +
+                "      \"description\": []\n" +
+                "    }\n" +
+                "  ],\n" +
+                "  \"educations\": [\n" +
+                "    {\n" +
+                "      \"degree\": \"\",\n" +
+                "      \"university\": \"\",\n" +
+                "      \"duration\": \"\",\n" +
+                "      \"details\": \"\"\n" +
+                "    }\n" +
+                "  ],\n" +
+                "  \"languages\": [\n" +
+                "    {\n" +
+                "      \"language\": \"\",\n" +
+                "      \"level\": 0\n" +
+                "    }\n" +
+                "  ],\n" +
+                "  \"achievements\": [],\n" +
+                "  \"referees\": [\n" +
+                "    {\n" +
+                "      \"name\": \"\",\n" +
+                "      \"company\": \"\",\n" +
+                "      \"email\": \"\",\n" +
+                "      \"phone\": \"\"\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}\n\n" +
+                "YÊU CẦU QUAN TRỌNG VỀ SKILLS: Mảng 'skills' CHỈ ĐƯỢC PHÉP chứa các từ khóa nằm trong danh sách chuẩn sau: [" + skillListStr + "]. Nếu CV có kỹ năng không khớp, hãy bỏ qua.\n" +
+                "ĐẦU RA: Chỉ trả về chuỗi JSON hợp lệ, không bọc bằng thẻ markdown (như ```json), không in ra bất kỳ đoạn text giải thích nào khác.";
         Map<String, Object> requestBody = Map.of(
                 "model", "google/gemini-2.0-flash-001",
                 "messages", List.of(
@@ -154,43 +218,135 @@ public class AiOcrService {
 
         return finalResponse;
     }
-    public String evaluateCvFromUrl(String fileUrl) throws IOException {
-        if (fileUrl.contains("cloudinary.com") && fileUrl.endsWith(".pdf")) {
-            fileUrl = fileUrl.replace(".pdf", ".jpg");
-        }
+    public String evaluateCvFromUrl(String fileUrl) throws Exception {
+        List<Map<String, Object>> contentList = new ArrayList<>();
+        String prompt = "Bạn là một Headhunter cấp cao kiêm Chuyên gia Copywriter. Hãy đọc thật kỹ nội dung trong (các) hình ảnh CV này.\n" +
+                "Nhiệm vụ của bạn KHÔNG PHẢI là đánh giá thiết kế, mà là TỐI ƯU HÓA NỘI DUNG. Hãy:\n" +
+                "1. Soi và nhặt ra các lỗi chính tả, lỗi gõ phím, lỗi ngữ pháp tiếng Việt/tiếng Anh.\n" +
+                "2. Tìm các câu văn lủng củng, diễn đạt yếu hoặc mô tả kinh nghiệm chưa đủ 'chạm' và viết lại chúng sao cho chuyên nghiệp, ấn tượng và mang ngôn ngữ của người đạt thành tựu (hướng kết quả).\n" +
+                "Trả về kết quả dưới dạng JSON có cấu trúc sau:\n" +
+                "{\n" +
+                "  \"spelling_and_grammar\": [\n" +
+                "    {\"error\": \"[Trích dẫn từ viết sai/lỗi]\", \"fix\": \"[Từ/câu sửa lại cho đúng]\"}\n" +
+                "  ],\n" +
+                "  \"better_phrasing\": [\n" +
+                "    {\"original\": \"[Câu gốc lủng củng/yếu trong CV]\", \"suggestion\": \"[Câu viết lại sắc bén, chuyên nghiệp hơn]\"}\n" +
+                "  ],\n" +
+                "  \"general_advice\": [\"[Lời khuyên 1 về cách hành văn/nội dung]\", \"[Lời khuyên 2]\"]\n" +
+                "}\n" +
+                "YÊU CẦU QUAN TRỌNG: Chỉ trả về ĐÚNG chuỗi JSON hợp lệ, không bọc trong thẻ Markdown (như ```json), không giải thích thêm bất kỳ câu nào bên ngoài JSON.";
 
-        byte[] fileBytes;
+        contentList.add(Map.of("type", "text", "text", prompt));
+
         URL url = new URL(fileUrl);
         try (InputStream in = url.openStream()) {
-            fileBytes = in.readAllBytes();
+            if (fileUrl.toLowerCase().endsWith(".pdf") || fileUrl.contains("[cloudinary.com/](https://cloudinary.com/)")) {
+                // Xử lý file PDF (Dùng PDFBox để cắt từng trang thành ảnh)
+                try (PDDocument document = PDDocument.load(in)) {
+                    PDFRenderer pdfRenderer = new PDFRenderer(document);
+
+                    // Chỉ lấy tối đa 3 trang đầu để tiết kiệm token
+                    int pageCount = Math.min(document.getNumberOfPages(), 3);
+
+                    for (int page = 0; page < pageCount; page++) {
+                        // Render với độ phân giải 150 DPI là đủ nét cho AI đọc
+                        BufferedImage bim = pdfRenderer.renderImageWithDPI(page, 150);
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        ImageIO.write(bim, "jpeg", baos);
+
+                        String base64Image = Base64.getEncoder().encodeToString(baos.toByteArray());
+                        String dataUrl = "data:image/jpeg;base64," + base64Image;
+
+                        // Thêm ảnh của trang này vào list gửi cho AI
+                        contentList.add(Map.of("type", "image_url", "image_url", Map.of("url", dataUrl)));
+                    }
+                }
+            } else {
+                byte[] fileBytes = in.readAllBytes();
+                String mimeType = fileUrl.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
+                String base64Image = Base64.getEncoder().encodeToString(fileBytes);
+                String dataUrl = "data:" + mimeType + ";base64," + base64Image;
+
+                contentList.add(Map.of("type", "image_url", "image_url", Map.of("url", dataUrl)));
+            }
         }
 
-        String mimeType = fileUrl.endsWith(".pdf") ? "application/pdf" : "image/jpeg";
-        String base64Image = Base64.getEncoder().encodeToString(fileBytes);
-        String dataUrl = "data:" + mimeType + ";base64," + base64Image;
-
-        String prompt = "Bạn là một Headhunter kiêm chuyên gia thiết kế CV. Hãy nhìn vào hình ảnh CV này và soi thật kỹ.\n" +
-                "Đánh giá chi tiết hình thức (bố cục lề, màu sắc, font chữ lớn/nhỏ, lỗi chính tả/ngữ pháp) và nội dung.\n" +
-                "Trả về kết quả dưới dạng JSON sau:\n" +
-                "{\n" +
-                "  \"pros\": [\"Điểm mạnh 1\", \"Điểm mạnh 2\"],\n" +
-                "  \"cons\": [\"Điểm yếu 1 (VD: Cỡ chữ quá nhỏ, sai chính tả ở dòng X, màu nhạt...)\", \"Điểm yếu 2\"],\n" +
-                "  \"suggestions\": [\"Gợi ý 1 (VD: Nên đổi sang font Serif, canh lề lại...)\", \"Gợi ý 2\"]\n" +
-                "}\n" +
-                "YÊU CẦU QUAN TRỌNG: Chỉ trả về đúng JSON hợp lệ, không bọc trong Markdown, không giải thích thêm.";
-
+        // 3. Build Request Body
         Map<String, Object> requestBody = Map.of(
                 "model", "google/gemini-2.0-flash-001",
                 "messages", List.of(
-                        Map.of("role", "user", "content", List.of(
-                                Map.of("type", "text", "text", prompt),
-                                Map.of("type", "image_url", "image_url", Map.of("url", dataUrl))
-                        ))
+                        Map.of("role", "user", "content", contentList)
                 )
         );
 
         Map<String, Object> response = sendRequestToOpenRouter(requestBody);
         return extractJsonFromResponse(response);
+    }
+    public CvRequest rewriteCvData(AutoFixRequest request) {
+
+        Cv cv = repository.findById(request.getCvId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy CV với ID: " + request.getCvId()));
+
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonInput = "";
+        String jsonFeedback = "";
+
+        try {
+            if (cv.getCvData() instanceof String) {
+                jsonInput = (String) cv.getCvData();
+            } else {
+                jsonInput = mapper.writeValueAsString(cv.getCvData());
+            }
+
+            if (request.getFeedback() != null) {
+                jsonFeedback = mapper.writeValueAsString(request.getFeedback());
+            } else {
+                jsonFeedback = "{}"; // Nếu không có feedback thì để trống
+            }
+
+            String prompt = "Bạn là một Headhunter cấp cao kiêm Copywriter chuyên nghiệp.\n\n" +
+                    "Dưới đây là dữ liệu CV gốc của ứng viên (định dạng JSON):\n" +
+                    jsonInput + "\n\n" +
+                    "Dưới đây là danh sách các lỗi chính tả, lỗi ngữ pháp và các gợi ý nâng cấp văn phong cần áp dụng (định dạng JSON):\n" +
+                    jsonFeedback + "\n\n" +
+                    "Nhiệm vụ của bạn:\n" +
+                    "1. Hãy đọc kỹ danh sách gợi ý trong 'better_phrasing' và sửa đổi/thay thế chính xác các câu tương ứng có trong CV gốc.\n" +
+                    "2. Kiểm tra và khắc phục thêm các lỗi trong 'spelling_and_grammar' (nếu có) vào các trường dữ liệu tương ứng.\n" +
+                    "3. Nâng cấp văn phong tại các field: 'summary', 'description' dựa trên các gợi ý đó sao cho chuyên nghiệp, sắc bén.\n" +
+                    "4. TUYỆT ĐỐI KHÔNG thay đổi cấu trúc JSON ban đầu của CV (keys, mảng, object).\n" +
+                    "5. TUYỆT ĐỐI KHÔNG thay đổi dữ liệu của các field định danh: fullName, email, phone, avatarUrl, address, github, linkedin, templateName, ngày tháng.\n\n" +
+                    "YÊU CẦU TỐI THƯỢNG: Chỉ trả về duy nhất chuỗi JSON hợp lệ của CV đã được nâng cấp hoàn chỉnh theo đúng cấu trúc cũ. Không bọc trong thẻ Markdown (như ```json), không giải thích thêm.";
+
+            Map<String, Object> requestBody = Map.of(
+                    "model", "google/gemini-2.0-flash-001",
+                    "messages", List.of(
+                            Map.of("role", "user", "content", prompt)
+                    ),
+                    "temperature", 0.2
+            );
+
+            Map<String, Object> response = sendRequestToOpenRouter(requestBody);
+
+            String aiResponseJson = extractJsonFromResponse(response);
+
+            if (aiResponseJson == null || !aiResponseJson.trim().startsWith("{")) {
+                System.err.println("AI trả về sai format, fallback về data gốc.");
+                return mapper.readValue(jsonInput, CvRequest.class);
+            }
+
+            return mapper.readValue(aiResponseJson, CvRequest.class);
+
+        } catch (Exception e) {
+            System.err.println("Lỗi trong quá trình AI xử lý áp dụng Feedback cho CV: " + e.getMessage());
+            System.err.println("Fallback: Sử dụng lại dữ liệu CV gốc để tiếp tục tạo PDF.");
+
+            try {
+                return mapper.readValue(jsonInput, CvRequest.class);
+            } catch (Exception ex) {
+                System.err.println("Không thể parse dữ liệu gốc, trả về object rỗng.");
+                return new CvRequest();
+            }
+        }
     }
     private Map<String, Object> sendRequestToOpenRouter(Map<String, Object> body) {
         RestTemplate restTemplate = new RestTemplate();
@@ -228,6 +384,7 @@ public class AiOcrService {
         }
 
     }
+
 
 
 }

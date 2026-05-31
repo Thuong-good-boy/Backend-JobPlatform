@@ -110,8 +110,7 @@ public class JobController {
     public ResponseEntity<?> applyJob(@PathVariable @NotNull(message = "JOB_REQUIRED") Long jobId) {
 
             Long userId= userService.getCurrentUserId();
-            boolean isPro = userService.getCurrentUserIsPro();
-             applicationService.applyForJob(jobId,userId, isPro);
+             applicationService.applyForJob(jobId,userId);
             return ResponseEntity.ok("Ứng tuyển thành công!");
 
     }

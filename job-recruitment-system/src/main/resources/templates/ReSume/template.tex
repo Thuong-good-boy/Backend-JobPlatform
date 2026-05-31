@@ -1,0 +1,76 @@
+\documentclass{resume}
+
+% 1. ĐÃ XÓA/COMMENT DÒNG NÀY: \usepackage[utf8]{inputenc}
+% 2. THÊM DÒNG NÀY ĐỂ XELATEX HỖ TRỢ HIỂN THỊ TIẾNG VIỆT TỐT NHẤT:
+\usepackage{fontspec}
+
+\usepackage{tabularx}
+\usepackage{geometry}
+
+\geometry{left=1.5cm, right=1.5cm, top=1.5cm, bottom=1.5cm}
+
+\begin{document}
+\fontfamily{ppl}\selectfont
+
+% --- PHẦN TIÊU ĐỀ ĐẦU TRANG & ẢNH ĐẠI DIỆN ---
+\noindent
+\begin{tabularx}{\linewidth}{@{}X r@{}}
+  \raggedright{
+    {\Huge \textbf{{{FULL_NAME}}}}\\[0.2cm]
+    \small{
+      Email: {{EMAIL}} \ | \ SĐT: {{PHONE}} \\
+      Github: {{GITHUB}}
+    }
+  } &
+  \raggedleft{
+    % Tự động chèn ảnh nếu có, hoặc để trống không làm vỡ khung
+    \includegraphics[width=2.5cm]{mypic.png}
+  }
+\end{tabularx}
+
+\vspace{0.4cm}
+
+% --- KHỐI SUMMARY ---
+\if\relax\detokenize{{{SUMMARY_TEXT}}}\relax\else
+\noindent{\Large\textbf{Summary}}
+\vspace{-0.2cm}
+\nopagebreak\\\line(1,0){500}\\
+{{SUMMARY_TEXT}}
+\vspace{0.3cm}
+\fi
+
+% --- KHỐI EDUCATION ---
+\noindent{\Large\textbf{EDUCATION}}
+\vspace{-0.2cm}
+\nopagebreak\\\line(1,0){500}\\
+{{EDUCATIONS_LIST}}
+\vspace{0.3cm}
+
+% --- KHỐI SKILLS ---
+\noindent{\Large\textbf{SKILLS}}
+\vspace{-0.2cm}
+\nopagebreak\\\line(1,0){500}\\
+{{SKILLS_LIST}}
+\vspace{0.3cm}
+
+% --- KHỐI PROJECTS ---
+\noindent{\Large\textbf{PROJECTS}}
+\vspace{-0.2cm}
+\nopagebreak\\\line(1,0){500}\\
+{{PROJECTS_LIST}}
+\vspace{0.3cm}
+
+% --- KHỐI EXPERIENCE ---
+\noindent{\Large\textbf{EXPERIENCE}}
+\vspace{-0.2cm}
+\nopagebreak\\\line(1,0){500}\\
+{{EXPERIENCES_LIST}}
+\vspace{0.3cm}
+
+% --- KHỐI GLOBAL CERTIFICATIONS / ACHIEVEMENTS ---
+\noindent{\Large\textbf{Global Certifications}}
+\vspace{-0.2cm}
+\nopagebreak\\\line(1,0){500}\\
+{{ACHIEVEMENTS_LIST}}
+
+\end{document}

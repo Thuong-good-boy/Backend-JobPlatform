@@ -309,7 +309,42 @@ public class EmailService {
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
         helper.setTo(request.getEmail());
         helper.setSubject(request.getSubject());
-        String htmlBody = request.getBody().replace("\n", "<br>");
+        String buttonUrl = "https://pathuongdev.id.vn/messages";
+        String buttonText = "💬 Nhắn tin trao đổi ngay";
+
+        if (request.getJobId() != null) {
+            buttonUrl = "https://pathuongdev.id.vn/jobs/" + request.getJobId();
+            buttonText = "🚀 Ứng tuyển ngay";
+        }
+        String contentWithBr = request.getBody().replace("\n", "<br>");
+        String htmlBody =
+                "<div style=\"font-family: 'Segoe UI', Helvetica, Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px; color: #334155; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);\">"
+                        + "    "
+                        + "    <div style=\"text-align: center; margin-bottom: 24px; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9;\">"
+                        + "        <h2 style=\"color: #1e40af; margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 0.5px;\">HỆ THỐNG TUYỂN DỤNG JOBPLATFORM</h2>"
+                        + "    </div>"
+                        + "    "
+                        + "    "
+                        + "    <div style=\"font-size: 15px; line-height: 1.7; color: #334155; min-height: 100px;\">"
+                        +          contentWithBr
+                        + "    </div>"
+                        + "    "
+                        + "    "
+                        + "    <div style=\"text-align: center; margin: 35px 0 25px 0;\">"
+                        + "        <a href=\"" + buttonUrl + "\" target=\"_blank\" style=\"background-color: #2563eb; color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; font-size: 15px; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);\">"
+                        +              buttonText
+                        + "        </a>"
+                        + "    </div>"
+                        + "    "
+                        + "    "
+                        + "    <hr style=\"border: 0; border-top: 1px solid #f1f5f9; margin: 25px 0;\" />"
+                        + "    <div style=\"text-align: center; font-size: 12px; color: #94a3b8; line-height: 1.5;\">"
+                        + "        <p style=\"margin: 0 0 4px 0;\">Đây là email tự động được gửi từ hệ thống <strong>JobPlatform</strong>.</p>"
+                        + "        <p style=\"margin: 0;\">Nếu cần hỗ trợ, bạn có thể bấm vào nút nhắn tin ở trên để liên hệ trực tiếp với Nhà tuyển dụng.</p>"
+                        + "    </div>"
+                        + "</div>";
+
+        // Gán nội dung HTML vào mail helper
         helper.setText(htmlBody, true);
         helper.setFrom("email.he.thong.cua.ban@gmail.com", "Hệ thống JobPlatform");
 
@@ -323,6 +358,5 @@ public class EmailService {
 
         mailSender.send(message);
     }
-
 
 }

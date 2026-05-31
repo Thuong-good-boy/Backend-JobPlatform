@@ -40,7 +40,7 @@ public class  ApplicationService {
     private  final MatchScoreRepository matchScoreRepository;
     private  final AiMatchingService aiMatchingService;
 
-    public void applyForJob(Long jobId , Long userId, Boolean ispro) {
+    public void applyForJob(Long jobId , Long userId) {
         Job job = jobRepository.getReferenceById(jobId);
         Cv cv = cvRepository.getCvByUserId(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.CV_006));
@@ -57,6 +57,8 @@ public class  ApplicationService {
         applicationRepository.save(app);
 
         Boolean hasMacthScore = matchScoreRepository.existsByJobIdAndCvId(jobId, cv.getId());
+        System.out.println("jobId" + jobId + "    cvId" + cv.getId());
+        System.out.println(hasMacthScore);
         if(!hasMacthScore){
             aiMatchingService.calculateAndSave(cv,job);
         }

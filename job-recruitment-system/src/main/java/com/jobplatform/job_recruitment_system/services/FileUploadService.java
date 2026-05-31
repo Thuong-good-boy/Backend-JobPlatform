@@ -52,5 +52,15 @@ public class FileUploadService {
             return null;
         }
     }
+    public String uploadPdfBytes(byte[] fileBytes) throws IOException {
+        Map uploadResult = cloudinary.uploader().upload(fileBytes,
+                ObjectUtils.asMap(
+                        "public_id", "cv_generated_" + UUID.randomUUID().toString(),
+                        "resource_type", "image",
+                        "format", "pdf"
+                ));
+        return uploadResult.get("secure_url").toString();
+    }
+
 
 }
