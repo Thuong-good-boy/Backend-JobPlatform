@@ -3,7 +3,9 @@ package com.jobplatform.job_recruitment_system.services;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -36,6 +38,26 @@ public class FileUploadService {
             }
         } catch (IOException e) {
             System.err.println("Lỗi khi xóa ảnh: " + e.getMessage());
+        }
+    }
+    public void deleteFile(String fileUrl) {
+        try {
+            String publicId = getPublicIdFromUrl(fileUrl);
+            System.out.println("URL nhận được từ Frontend: " + fileUrl);
+            System.out.println("publish Id : " + publicId);
+            if (publicId != null) {
+
+                // XỬ LÝ CỐT LÕI: Cắt bỏ đuôi file (.pdf, .jpg,...) vì lúc upload public_id không có đuôi
+                if (publicId.contains(".")) {
+                    publicId = publicId.substring(0, publicId.lastIndexOf('.'));
+                }
+
+                Map<String, Object> result = cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+
+                System.out.println(">>> Đã yêu cầu xóa tệp trên Cloudinary: " + publicId + " - Trạng thái: " + result.get("result"));
+            }
+        } catch (IOException e) {
+            System.err.println("Lỗi khi xóa tệp trên Cloudinary: " + e.getMessage());
         }
     }
 

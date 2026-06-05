@@ -64,6 +64,7 @@ public class CompanyService {
 
         try {
             OcrResultReponse ocrResultReponse = aiOcrService.extractCompanyInfo(request.getLicenseImage());
+            System.out.println("mã đây: "+ ocrResultReponse.getTaxCode());
             if (ocrResultReponse == null || ocrResultReponse.getTaxCode() == null) {
                 throw new AppException(ErrorCode.GPKD_002);
             }

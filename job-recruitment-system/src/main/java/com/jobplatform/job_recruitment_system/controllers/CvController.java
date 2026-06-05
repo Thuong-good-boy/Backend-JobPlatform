@@ -53,7 +53,7 @@ public class CvController {
     @PostMapping(value ="/generate",produces = "application/json;charset=UTF-8")
     public ResponseEntity<?> generateCv(@RequestBody CvRequest request) {
         try {
-            byte[] pdfBytes = cvService.generateCvPdf(request);
+            byte[] pdfBytes = request.getTemplateName().equals("AltaCV")? cvService.generateCvPdf(request): cvService.generateResumePdf(request);
             String cloudinaryUrl = fileUploadService.uploadPdfBytes(pdfBytes);
             System.out.println(cloudinaryUrl);
             return ResponseEntity.ok().body(Map.of(
@@ -85,10 +85,12 @@ public class CvController {
     }
     @PostMapping("/delete-url-cv")
     public void deleteurlCV(@RequestBody Map<String, String> payload) {
-        String url = payload.get("url");
-        fileUploadService.deleteImage(url);
+        String url = payload.get("pdfUrl");
+        System.out.println("cos vao dsd: ");
+        fileUploadService.deleteFile(url);
     }
-    @PostMapping("/save-url-cv")
+    @PostMapping("/" +
+            "save-url-cv")
     public ResponseEntity<?> saveurlCV(@RequestBody Map<String, String> payload) {
         try {
             String pdfUrl = payload.get("pdfUrl");
@@ -106,6 +108,7 @@ public class CvController {
             CvRequest upgradedRequest = aiOcrService.rewriteCvData(request);
             upgradedRequest.setTemplateName(request.getTemplateKey());
             System.out.println(upgradedRequest.getTemplateName());
+            upgradedRequest.setAvatarUrl(request.getAvatarUrl());
             byte[] pdfBytes = cvService.generateCvPdf(upgradedRequest);
             String cloudinaryUrl = fileUploadService.uploadPdfBytes(pdfBytes);
             System.out.println(cloudinaryUrl);

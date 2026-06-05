@@ -17,5 +17,7 @@ public class AutoFixRequest {
     private String templateKey;
     @JsonProperty("feedback")
     private FeedbackDto feedback;
+    @JsonProperty("avatarUrl")
+    private String avatarUrl;
 
 }

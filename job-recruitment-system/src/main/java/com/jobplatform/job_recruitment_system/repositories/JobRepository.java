@@ -31,15 +31,9 @@ public interface JobRepository extends JpaRepository<Job, Long> , RevisionReposi
      SELECT * FROM jobs
          WHERE (pinning_until < CURRENT_TIMESTAMP OR is_pinning = false OR is_pinning IS NULL)
            AND status = 'OPEN'
-         ORDER BY created_at DESC
+         ORDER BY last_boosted_at DESC
     """, nativeQuery = true)
     Slice<Job> findAllJobsOpen(Pageable pageable);
-    @Query(value = """
-    SELECT * FROM jobs 
-        WHERE  pinning_until > CURRENT_TIMESTAMP and status = 'OPEN'
-        ORDER BY RANDOM()
-""", nativeQuery = true)
-    Slice<Job> fillAllJobsPro(Pageable pageable);
     @Query("""
         select j from Job j where j.title like %:search% and j.status = :status order by j.createdAt desc
     """)
@@ -181,7 +175,7 @@ public interface JobRepository extends JpaRepository<Job, Long> , RevisionReposi
                 AND j.status = 'OPEN'
                 AND j.search_vector @@ to_tsquery('simple', :skillQuery)
           )
-        ORDER BY last_boosted_at DESC
+        ORDER BY last_boosted_at ASC
         LIMIT 3
     )
 """, nativeQuery = true)
@@ -193,7 +187,7 @@ public interface JobRepository extends JpaRepository<Job, Long> , RevisionReposi
     SELECT * FROM jobs 
     WHERE pinning_until > CURRENT_TIMESTAMP 
       AND status = 'OPEN'
-    ORDER BY last_boosted_at DESC
+    ORDER BY last_boosted_at ASC
     LIMIT 3
 """, nativeQuery = true)
     List<Job> findTop3ProJobsRoundRobin();

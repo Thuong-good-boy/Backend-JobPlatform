@@ -93,7 +93,8 @@ public enum ErrorCode {
     NOTPRO_03("Bạn đã hết lượt đẩy job.",HttpStatus.TOO_MANY_REQUESTS),
 
     SKILL_01("Không tìm thấy skill. ",HttpStatus.NOT_FOUND),
-
+    SKILL_02("Skill này đã tồn tại trong hiện thống. ", HttpStatus.BAD_REQUEST),
+    SKILL_03("Skill này không tồn tại trong thị trường. ", HttpStatus.BAD_REQUEST),
     PACKAGE_01("Không tìm thầy package",HttpStatus.NOT_FOUND),
 
     REPORTREASON_01("Không tìm thấy ReportReason này!",HttpStatus.NOT_FOUND),
@@ -102,7 +103,8 @@ public enum ErrorCode {
     FILE_01("File rỗng!", HttpStatus.BAD_REQUEST),
     FILE_02("Đường dẫn file không hợp lệ!", HttpStatus.BAD_REQUEST),
     REPORT_02("Lỗi report liên tiếp .Vui lòng đợi 5 phút sau để tiếp!", HttpStatus.TOO_MANY_REQUESTS),
-    UNCLOCK_01("Bạn đã hết lượt xem cv!",HttpStatus.TOO_MANY_REQUESTS)
+    UNCLOCK_01("Bạn đã hết lượt xem cv!",HttpStatus.TOO_MANY_REQUESTS),
+
 
     ;
 

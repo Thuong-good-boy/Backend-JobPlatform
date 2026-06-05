@@ -13,4 +13,5 @@ public interface SkillRepository extends JpaRepository<Skill, Long> {
     Optional<Skill> findBySkillName(String skillName);
     @Query("select s.skillName from Skill s ")
     List<String> getALlSkillName();
+    boolean existsBySkillNameIgnoreCase(String skillName);
 }

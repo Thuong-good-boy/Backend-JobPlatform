@@ -8,10 +8,11 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class LanguageDto {
-    @JsonProperty("language")
-    private String language;
-
-    @JsonProperty("level")
-    private String level;
+public class AchievementDto {
+    @JsonProperty("icon")
+    private String icon;
+    @JsonProperty("title")
+    private String title;
+    @JsonProperty("details")
+    private String details;
 }

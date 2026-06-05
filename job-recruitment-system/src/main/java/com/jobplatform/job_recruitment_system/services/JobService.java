@@ -122,6 +122,7 @@ public class JobService {
         List<Long> jobIds = jobList.stream().map(Job::getId).toList();
         jobRepository.incrementViewCountForJobs(jobIds);
     }
+    @Transactional
     @Async
     public void setLastBoostedAt(List<Job> jobList) {
         if (jobList == null || jobList.isEmpty()) {
@@ -240,17 +241,7 @@ public class JobService {
     public  Job getReferenceById(Long jobid){
         return jobRepository.getReferenceById(jobid);
     }
-    public  Object getJobByjobIdandCvId(Long jodId,Long userId ){
-        if (userId == null) {
-            return jobRepository.findById(jodId);
-        }
 
-        Cv userCv =  cvService.getFirstCv (userId).orElse(null);
-        if (userCv == null) {
-            return jobRepository.findById(jodId);
-        }
-        return  matchScoreRepository.findRecommendedJobsByJobId(jodId,userCv.getId());
-    }
     public List<ListJobResponse> getJobsByCompanyUserId() {
         Long userId = userService.getCurrentUserId();
         Long companyId= companyRepository.getCompanyId(userId);

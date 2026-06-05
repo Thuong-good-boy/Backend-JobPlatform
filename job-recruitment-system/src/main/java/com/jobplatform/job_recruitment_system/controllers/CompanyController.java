@@ -44,6 +44,7 @@ public class CompanyController {
             @Valid @ModelAttribute CompanyOnboardingRequest request) {
 
         try {
+            System.out.println("có vào");
             companyService.processOnboarding(request);
             return ResponseEntity.ok("Cập nhật hồ sơ công ty thành công!");
         } catch (Exception e) {

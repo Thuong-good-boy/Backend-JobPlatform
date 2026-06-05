@@ -9,6 +9,7 @@ import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
 import com.jobplatform.job_recruitment_system.models.User;
 import com.jobplatform.job_recruitment_system.services.*;
 import com.jobplatform.job_recruitment_system.utils.CookieUtils;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -153,7 +154,11 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
         }
     }
-
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request,HttpServletResponse response) {
+        userService.logout(request, response);
+        return ResponseEntity.ok("Đăng xuất thành công");
+    }
 
 
 

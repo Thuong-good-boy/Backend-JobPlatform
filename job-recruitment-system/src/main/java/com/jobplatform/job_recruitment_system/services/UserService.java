@@ -19,12 +19,11 @@ import com.jobplatform.job_recruitment_system.models.Company;
 import com.jobplatform.job_recruitment_system.models.RefreshToken;
 import com.jobplatform.job_recruitment_system.enums.Role;
 import com.jobplatform.job_recruitment_system.models.User;
-import com.jobplatform.job_recruitment_system.repositories.CandidateRepository;
-import com.jobplatform.job_recruitment_system.repositories.CompanyRepository;
-import com.jobplatform.job_recruitment_system.repositories.UserRepository;
-import com.jobplatform.job_recruitment_system.repositories.UserSubscriptionRepository;
+import com.jobplatform.job_recruitment_system.repositories.*;
 import jakarta.mail.MessagingException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,6 +70,7 @@ public class UserService {
     private  final  LoginAttemptService loginAttemptService;
     private  final CompanyRepository companyRepository;
     private  final CompanyMapper companyMapper;
+    private  final RefreshTokenRepository refreshTokenRepository;
     public LoginResponse login(LoginRequest userrequest, HttpServletRequest request) {
         String clientIp = getCLientIp(request);
 
@@ -440,5 +440,30 @@ public class UserService {
         Long userId = jwtService.extractId(token);
         User user = userRepository.getReferenceById(userId);
         return  userMapper.toUserResponse(user);
+    }
+    @Async
+    @Transactional
+    public  void  logout(
+            HttpServletRequest request,
+            HttpServletResponse response){
+        String refreshToken = null ;
+        if(request.getCookies() !=null){
+            for(Cookie cookie : request.getCookies()){
+                if("refreshToken".equals(cookie.getName())){
+                    refreshToken = cookie.getValue();
+                    break;
+                }
+            }
+        }
+        if (refreshToken != null) {
+            refreshTokenRepository.deleteByToken(refreshToken);
+        }
+        Cookie cookie = new Cookie("refreshToken", "");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
+
     }
 }

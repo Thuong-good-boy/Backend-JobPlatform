@@ -55,7 +55,7 @@ public interface CvRepository extends JpaRepository<Cv, Long> {
 """, nativeQuery = true)
     List<CvsLast3MonthsResponse> getCvsLast3MonthsResponse();
 
-    @Query(value = "select * from cvs where user_id = :userId limit 1", nativeQuery = true)
+    @Query(value = "select * from cvs where user_id = :userId order by id desc limit 1", nativeQuery = true)
     Optional<Cv> getCvByUserId(@Param("userId") Long userId);
 
 

@@ -41,25 +41,33 @@ public class Job {
     private String location;
 
     @Enumerated(EnumType.STRING)
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private JobStatus status = JobStatus.PENDING;
+
     @Column(name = "view_count", columnDefinition = "int default 0")
     @NotAudited
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private Integer viewCount = 0;
     @NotAudited
     @Column(name = "click_count", columnDefinition = "int default 0")
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private Integer clickCount = 0;
     @CreationTimestamp
     @Column(updatable = false)
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private LocalDateTime createdAt;
     @UpdateTimestamp
     @Column(name = "updated_at")
     @NotAudited
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private LocalDateTime updatedAt;
 
     @Column(name = "is_pinning")
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private Boolean isTrending;
 
     @Column(name = "pinning_until")
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private LocalDateTime trendingUntil;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -67,6 +75,7 @@ public class Job {
     @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private Company company;
     @Column(name = "last_boosted_at")
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private LocalDateTime lastBoostedAt;
     @Column(name ="weight_skill")
     private double weightSkill;

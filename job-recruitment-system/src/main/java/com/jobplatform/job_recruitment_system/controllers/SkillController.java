@@ -1,8 +1,10 @@
 package com.jobplatform.job_recruitment_system.controllers;
 
+import com.jobplatform.job_recruitment_system.dtos.Response.SkillValidationResponse;
 import com.jobplatform.job_recruitment_system.models.Skill;
 import com.jobplatform.job_recruitment_system.services.SkillService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,7 +22,14 @@ public class SkillController {
     @PostMapping
     public void createSkill(@RequestBody Map<String,String> request){
         String nameSkill = request.get("skill_name");
-        skillService.create(nameSkill);
+         skillService.create(nameSkill);
+    }
+
+    @PostMapping("/createbyuser")
+    public ResponseEntity<?> createSkillByUsers(@RequestBody Map<String,String> request){
+        String nameSkill = request.get("skill_name");
+        SkillValidationResponse response = skillService.createByUsers(nameSkill);
+        return ResponseEntity.ok(response);
     }
     @DeleteMapping("/{id}")
     public void deleteSkill(@PathVariable Long id){

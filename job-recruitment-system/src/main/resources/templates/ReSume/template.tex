@@ -1,76 +1,68 @@
 \documentclass{resume}
-
-% 1. ĐÃ XÓA/COMMENT DÒNG NÀY: \usepackage[utf8]{inputenc}
-% 2. THÊM DÒNG NÀY ĐỂ XELATEX HỖ TRỢ HIỂN THỊ TIẾNG VIỆT TỐT NHẤT:
+\usepackage{tabularx}
+\usepackage{hyperref}
 \usepackage{fontspec}
 
-\usepackage{tabularx}
-\usepackage{geometry}
-
-\geometry{left=1.5cm, right=1.5cm, top=1.5cm, bottom=1.5cm}
+% Cấu hình Font chữ Tiếng Việt khi dùng XeLaTeX
+\setmainfont{Arial}
 
 \begin{document}
 \fontfamily{ppl}\selectfont
-
-% --- PHẦN TIÊU ĐỀ ĐẦU TRANG & ẢNH ĐẠI DIỆN ---
 \noindent
-\begin{tabularx}{\linewidth}{@{}X r@{}}
-  \raggedright{
-    {\Huge \textbf{{{FULL_NAME}}}}\\[0.2cm]
+\begin{tabularx}{\linewidth}{@{}m{0.75\textwidth} m{0.25\textwidth}@{}}
+{
+    \large \textbf{{{FullName}}} \newline
     \small{
-      Email: {{EMAIL}} \ | \ SĐT: {{PHONE}} \\
-      Github: {{GITHUB}}
+        {{jobTitle}} \newline
+        {{address}} \textbf{·} {{phone}} \textbf{·} {{email}}
+        \newline {{social_networks_block}}
     }
-  } &
-  \raggedleft{
-    % Tự động chèn ảnh nếu có, hoặc để trống không làm vỡ khung
-    \includegraphics[width=2.5cm]{mypic.png}
-  }
+}
+&
+{
+    % Code Java tự động đổ lệnh \includegraphics vào đây
+    {{AVATAR_CMD}}
+}
 \end{tabularx}
 
-\vspace{0.4cm}
+{{BEGIN_philosophy}}
+\csection{Summary}{\small
+    \begin{itemize}
+        \item \footnotesize {{{philosophy}}}
+    \end{itemize}
+}
+{{END_philosophy}}
 
-% --- KHỐI SUMMARY ---
-\if\relax\detokenize{{{SUMMARY_TEXT}}}\relax\else
-\noindent{\Large\textbf{Summary}}
-\vspace{-0.2cm}
-\nopagebreak\\\line(1,0){500}\\
-{{SUMMARY_TEXT}}
-\vspace{0.3cm}
-\fi
+{{BEGIN_educations}}
+\csection{EDUCATION}{\small
+    \begin{itemize}
+        {{educations_LIST}}
+    \end{itemize}
+}
+{{END_educations}}
 
-% --- KHỐI EDUCATION ---
-\noindent{\Large\textbf{EDUCATION}}
-\vspace{-0.2cm}
-\nopagebreak\\\line(1,0){500}\\
-{{EDUCATIONS_LIST}}
-\vspace{0.3cm}
+{{BEGIN_skills}}
+\csection{SKILLS}{\small
+    \begin{itemize}
+        {{skills_LIST}}
+    \end{itemize}
+}
+{{END_skills}}
 
-% --- KHỐI SKILLS ---
-\noindent{\Large\textbf{SKILLS}}
-\vspace{-0.2cm}
-\nopagebreak\\\line(1,0){500}\\
-{{SKILLS_LIST}}
-\vspace{0.3cm}
+{{BEGIN_projects}}
+\csection{PROJECTS}{\small
+    \begin{itemize}
+        {{projects_LIST}}
+    \end{itemize}
+}
+{{END_projects}}
 
-% --- KHỐI PROJECTS ---
-\noindent{\Large\textbf{PROJECTS}}
-\vspace{-0.2cm}
-\nopagebreak\\\line(1,0){500}\\
-{{PROJECTS_LIST}}
-\vspace{0.3cm}
-
-% --- KHỐI EXPERIENCE ---
-\noindent{\Large\textbf{EXPERIENCE}}
-\vspace{-0.2cm}
-\nopagebreak\\\line(1,0){500}\\
-{{EXPERIENCES_LIST}}
-\vspace{0.3cm}
-
-% --- KHỐI GLOBAL CERTIFICATIONS / ACHIEVEMENTS ---
-\noindent{\Large\textbf{Global Certifications}}
-\vspace{-0.2cm}
-\nopagebreak\\\line(1,0){500}\\
-{{ACHIEVEMENTS_LIST}}
+{{BEGIN_experiences}}
+\csection{EXPERIENCE}{\small
+    \begin{itemize}
+        {{experiences_LIST}}
+    \end{itemize}
+}
+{{END_experiences}}
 
 \end{document}
