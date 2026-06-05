@@ -304,6 +304,55 @@ public class EmailService {
         mailSender.send(message);
     }
     @Async
+    public void sendAccountLockedEmail(String toEmail, String companyName, int violationCount) throws MessagingException {
+
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        helper.setFrom("support@jobplatform.com");
+        helper.setTo(toEmail);
+        helper.setSubject("[Job Platform] QUAN TRỌNG: Tài khoản của bạn đã bị khóa");
+
+        String htmlContent =
+                "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);'>"
+
+                        // Header: Tone màu đỏ cảnh báo
+                        + "<div style='background-color: #fee2e2; padding: 20px; border-bottom: 1px solid #fca5a5; text-align: center;'>"
+                        + "   <h2 style='color: #b91c1c; margin: 0;'>Đình Chỉ Tài Khoản</h2>"
+                        + "</div>"
+
+                        // Body
+                        + "<div style='padding: 30px 20px; background-color: #ffffff;'>"
+                        + "   <p style='color: #334155; font-size: 16px;'>Kính gửi <b>" + companyName + "</b>,</p>"
+                        + "   <p style='color: #475569; font-size: 15px; line-height: 1.6;'>"
+                        + "     Chúng tôi rất tiếc phải thông báo rằng tài khoản nhà tuyển dụng của Quý công ty trên Job Platform đã bị <b>khóa</b> do vi phạm Tiêu chuẩn Cộng đồng nhiều lần."
+                        + "   </p>"
+
+                        // Thông tin vi phạm (Khung viền đỏ)
+                        + "   <div style='background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #ef4444;'>"
+                        + "       <p style='margin: 0 0 10px 0; color: #475569; font-size: 14px;'><b>Số lần vi phạm:</b> <span style='color: #dc2626; font-weight: bold;'>" + violationCount + " lần</span></p>"
+                        + "       <p style='margin: 0; color: #475569; font-size: 14px;'><b>Trạng thái hiện tại:</b> <span style='color: #dc2626; font-weight: bold;'>Đã Khóa</span></p>"
+                        + "   </div>"
+
+                        // Lời khuyên / Hướng dẫn
+                        + "   <p style='color: #64748b; font-size: 14px; line-height: 1.6;'>"
+                        + "     Hiện tại, Quý công ty sẽ không thể đăng nhập, đăng tin tuyển dụng mới hay truy cập vào dữ liệu ứng viên. "
+                        + "     Nếu Quý công ty cho rằng quyết định này là nhầm lẫn hoặc muốn yêu cầu xem xét lại, vui lòng liên hệ với bộ phận Hỗ trợ bằng cách phản hồi trực tiếp lại email này."
+                        + "   </p>"
+                        + "</div>"
+
+                        // Footer
+                        + "<div style='background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;'>"
+                        + "   <p style='margin: 0; color: #94a3b8; font-size: 12px;'>Đây là email tự động từ hệ thống Job Platform.</p>"
+                        + "   <p style='margin: 5px 0 0 0; color: #94a3b8; font-size: 12px;'>&copy; 2026 Job Platform. Đội ngũ Kiểm duyệt chất lượng.</p>"
+                        + "</div>"
+
+                        + "</div>";
+
+        helper.setText(htmlContent, true);
+        mailSender.send(message);
+    }
+    @Async
     public void sendInterviewEmail(SendEmailRequest request) throws Exception {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");

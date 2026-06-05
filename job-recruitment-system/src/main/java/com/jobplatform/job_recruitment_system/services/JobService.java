@@ -396,4 +396,11 @@ public class JobService {
         job.setClickCount(job.getClickCount()+1);
         jobRepository.save(job);
     }
+    @Async
+    public  void lockListJobs(List<Job> jobList){
+        for(Job j : jobList){
+            j.setStatus(JobStatus.CLOSED);
+            jobRepository.save(j);
+        }
+    }
 }

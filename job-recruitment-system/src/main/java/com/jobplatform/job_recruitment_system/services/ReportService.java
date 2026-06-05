@@ -42,6 +42,7 @@ public class ReportService {
     private  final CompanyRepository companyRepository;
     private  final JobRepository jobRepository;
     private  final RedisService redisService;
+    private  final  JobService jobService;
 
     public void creatReport(ReportSubmitRequest request) throws Exception {
         boolean hasReasonId = request.getReasonId() != null;
@@ -202,6 +203,7 @@ public class ReportService {
                         Company company= companyRepository.findById(report.getTargetId()).orElseThrow(()-> new AppException(ErrorCode.COM_001));
                         User user = company.getUser();
                         user.setActive(false);
+
                         userRepository.save(user);
                         try {
                             emailService.sendCompanyAccountLockedEmail(
@@ -214,11 +216,28 @@ public class ReportService {
                             System.err.println("Lỗi gửi mail phản hồi báo cáo cho company : " + e.getMessage());
                         }
                     }else{
+
                         Job job = jobRepository.getReferenceById(report.getTargetId());
                         job.setStatus(JobStatus.CLOSED);
                         jobRepository.save(job);
                         Company company = job.getCompany();
                         User user = company.getUser();
+                        int count = repository.countReportJob(company.getId());
+                        if(count >=3){
+                            List<Job> jobList = jobRepository.findByCompanyIdCustom(company.getId());
+                            jobService.lockListJobs(jobList);
+                            user.setActive(false);
+                            userRepository.save(user);
+                            try {
+                                emailService.sendAccountLockedEmail(
+                                        user.getEmail(),
+                                        company.getCompanyName(),
+                                        count
+                                );
+                            } catch (Exception e) {
+                                System.err.println("Lỗi gửi mail khóa tài khoản cho user: " + e.getMessage());
+                            }
+                        }
                         try {
                             emailService.sendJobRemovedEmail(
                                     user.getEmail(),

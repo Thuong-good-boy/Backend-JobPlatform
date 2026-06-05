@@ -362,15 +362,12 @@ public class AiOcrService {
                     int pageCount = Math.min(document.getNumberOfPages(), 3);
 
                     for (int page = 0; page < pageCount; page++) {
-                        // Render với độ phân giải 150 DPI là đủ nét cho AI đọc
                         BufferedImage bim = pdfRenderer.renderImageWithDPI(page, 150);
                         ByteArrayOutputStream baos = new ByteArrayOutputStream();
                         ImageIO.write(bim, "jpeg", baos);
 
-                        // Lấy chuỗi Base64 THUẦN TÚY (Không chứa tiền tố data:image/...)
                         String base64Image = Base64.getEncoder().encodeToString(baos.toByteArray());
 
-                        // Nạp cấu trúc inlineData của từng trang vào partsList
                         partsList.add(Map.of("inlineData", Map.of(
                                 "mimeType", "image/jpeg",
                                 "data", base64Image.replaceAll("[\\s\\r\\n]", "")
@@ -382,7 +379,6 @@ public class AiOcrService {
                 String mimeType = fileUrl.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
                 String base64Image = Base64.getEncoder().encodeToString(fileBytes);
 
-                // Nạp cấu trúc inlineData của ảnh đơn vào partsList
                 partsList.add(Map.of("inlineData", Map.of(
                         "mimeType", mimeType,
                         "data", base64Image.replaceAll("[\\s\\r\\n]", "")
@@ -390,15 +386,12 @@ public class AiOcrService {
             }
         }
 
-        // 2. Build Request Body theo đúng định dạng JSON của Google Gemini API
         Map<String, Object> requestBody = Map.of(
                 "contents", List.of(
                         Map.of("parts", partsList)
                 )
         );
 
-        // 3. Đẩy vào luồng xử lý xoay vòng Key tự động
-        // Sử dụng model Vision cực tốt: "gemini-2.5-flash-lite"
         return executeDirectGeminiRequest("gemini-2.5-flash-lite", requestBody);
     }
     public CvRequest rewriteCvData(AutoFixRequest request) {
@@ -528,23 +521,19 @@ public class AiOcrService {
 
             try {
                 HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, createGoogleHeaders());
-                // Gọi đến Google API
-                Map<String, Object> response = restTemplate.postForObject(finalUrl, entity, Map.class);
+                 Map<String, Object> response = restTemplate.postForObject(finalUrl, entity, Map.class);
                 return extractJsonFromGoogleResponse(response);
 
             } catch (org.springframework.web.client.HttpStatusCodeException e) {
-                // Nuốt lỗi HTTP (404, 429, 401, 502...) để cho phép vòng lặp FOR tiếp tục nhảy sang Key tiếp theo
                 lastException = e;
                 System.err.println(">>> [AI OCR] Key index [" + index + "] lỗi HTTP " + e.getStatusCode() + ": " + e.getResponseBodyAsString());
 
             } catch (Exception e) {
-                // Các lỗi kết nối mạng, timeout... cũng cho phép đổi sang Key khác
                 lastException = e;
                 System.err.println(">>> [AI OCR] Key index [" + index + "] lỗi hệ thống: " + e.getMessage());
             }
         }
 
-        // Nếu đã duyệt qua hết tất cả các Key (hết vòng FOR) mà vẫn lỗi thì mới chính thức ném lỗi ra ngoài
         System.err.println(">>> [AI OCR] TẤT CẢ CÁC KEY ĐỀU THẤT BẠI!");
         if (lastException != null) {
             throw new RuntimeException("Tất cả API Key đều không khả dụng. Lỗi cuối cùng: " + lastException.getMessage(), lastException);
