@@ -1,0 +1,123 @@
+%%%%%%%%%%%%%%%%%
+% This is the base template.tex matching your Java backend system perfectly.
+%%%%%%%%%%%%%%%%
+
+\documentclass[10pt,a4paper,withhyper]{altacv}
+
+\geometry{left=1.25cm,right=1.25cm,top=1.5cm,bottom=1.5cm,columnsep=1.2cm}
+\usepackage{paracol}
+
+% CẤU HÌNH FONT CHUẨN TIẾNG VIỆT 100%
+\iftutex
+   \setmainfont{Arial}
+   \setsansfont{Arial}
+   \renewcommand{\familydefault}{\sfdefault}
+\else
+   \usepackage[T5]{fontenc}
+   \usepackage[utf8]{inputenc}
+   \usepackage{helvet}
+   \renewcommand{\familydefault}{\sfdefault}
+\fi
+
+\NewInfoField{gitlab}{\faGitlab}[https://gitlab.com/]
+
+\definecolor{SlateGrey}{HTML}{2E2E2E}
+\definecolor{LightGrey}{HTML}{666666}
+\definecolor{DarkPastelRed}{HTML}{450808}
+\definecolor{PastelRed}{HTML}{8F0D0D}
+\definecolor{GoldenEarth}{HTML}{E7D192}
+\colorlet{name}{black}
+\colorlet{tagline}{PastelRed}
+\colorlet{heading}{DarkPastelRed}
+\colorlet{headingrule}{GoldenEarth}
+\colorlet{subheading}{PastelRed}
+\colorlet{accent}{PastelRed}
+\colorlet{emphasis}{SlateGrey}
+\colorlet{body}{LightGrey}
+
+\renewcommand{\namefont}{\Huge\rmfamily\bfseries}
+\renewcommand{\personalinfofont}{\footnotesize}
+\renewcommand{\cvsectionfont}{\LARGE\rmfamily\bfseries}
+\renewcommand{\cvsubsectionfont}{\large\bfseries}
+\renewcommand{\cvItemMarker}{{\small\textbullet}}
+\renewcommand{\cvRatingMarker}{\faCircle}
+\usepackage{etoolbox} % Gói bùa chú để dùng hàm \ifblank check rỗng
+\begin{document}
+\name{{{FullName}}}  % <--- PHẢI LÀ FullName (F viết hoa) thì Java mới tìm thấy để replace
+\tagline{{{jobTitle}}}
+
+%% Java code tự động đổ cụm lệnh \photoR vào đây, không sợ mất ảnh
+{{AVATAR_CMD}}
+
+\personalinfo{%
+  \ifblank{{{email}}}{}{\email{{{email}}}}
+  \ifblank{{{phone}}}{}{\phone{{{phone}}}}
+  \ifblank{{{address}}}{}{\location{{{address}}}}
+  \ifblank{{{homepage}}}{}{\homepage{{{homepage}}}}
+  \ifblank{{{linkedin}}}{}{\linkedin{{{linkedin}}}}
+  \ifblank{{{github}}}{}{\github{{{github}}}}
+  \ifblank{{{gitlab}}}{}{\gitlab{{{gitlab}}}}
+  \ifblank{{{twitter}}}{}{\twitter{{{twitter}}}}
+  \ifblank{{{orcid}}}{}{\orcid{{{orcid}}}}
+}
+
+\makecvheader
+
+\columnratio{0.6}
+\begin{paracol}{2}
+
+{{BEGIN_experiences}}
+\cvsection{Kinh nghiệm làm việc}
+{{experiences_LIST}}
+{{END_experiences}}
+
+{{BEGIN_projects}}
+\cvsection{Dự án tiêu biểu}
+{{projects_LIST}}
+{{END_projects}}
+
+{{BEGIN_dayOfLife}}
+\cvsection{Phân bổ thời gian}
+\wheelchart{1.5cm}{0.5cm}{%
+{{dayOfLife_LIST}}
+}
+{{END_dayOfLife}}
+
+\newpage
+
+{{BEGIN_publications}}
+\cvsection{Nghiên cứu \& Bài báo}
+{{publications_LIST}}
+{{END_publications}}
+
+\switchcolumn
+
+{{BEGIN_philosophy}}
+\cvsection{Triết lý sống}
+\begin{quote}
+"{{{philosophy}}}"
+\end{quote}
+{{END_philosophy}}
+
+{{BEGIN_achievements}}
+\cvsection{Thành tựu nổi bật}
+{{achievements_LIST}}
+{{END_achievements}}
+
+{{BEGIN_skills}}
+\cvsection{Kỹ năng chuyên môn}
+{{skills_LIST}}
+{{END_skills}}
+
+{{BEGIN_languages}}
+\cvsection{Ngôn ngữ}
+{{languages_LIST}}
+{{END_languages}}
+
+{{BEGIN_educations}}
+\cvsection{Học vấn}
+{{educations_LIST}}
+{{END_educations}}
+
+\end{paracol}
+\end{document}

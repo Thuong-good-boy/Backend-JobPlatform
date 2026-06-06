@@ -1,0 +1,106 @@
+%%%%%%%%%%%%%%%%%
+% This is an sample CV template created using maltacv.cls
+% (May 2020) written by Riccardo Mancini, based on the
+% AltaCV template by LianTze Lim (liantze@gmail.com).
+%%%%%%%%%%%%%%%%
+
+%% If you need to pass whatever options to xcolor
+\PassOptionsToPackage{dvipsnames}{xcolor}
+
+\documentclass[10pt,a4paper,ragged2e]{maltacv}
+
+% =========================================================================
+% QUY TẮC 1: ÉP FONT CHUẨN XELATEX (CHỐNG LỖI MÃ HÓA KÉP TIẾNG VIỆT)
+% =========================================================================
+\usepackage{iftex}
+\iftutex
+  \setmainfont{Arial}
+  \setsansfont{Arial}
+  \renewcommand{\familydefault}{\sfdefault}
+\else
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+  \usepackage{tgheros}
+  \renewcommand*\familydefault{\sfdefault}
+\fi
+% =========================================================================
+
+\usepackage{setspace}
+\usepackage{mathpazo}
+\usepackage{textcomp}
+\usepackage{multicol}
+
+% Color schemes:
+\setcolorscheme{raisinblack_flame}
+\setlength\multicolsep{0pt}
+
+% Change the bullets for itemize and rating marker
+\renewcommand{\itemmarker}{{\small\textbullet}}
+
+\name{ {{FULL_NAME}} }
+\firstname{ {{FIRST_NAME}} }
+\familyname{ {{LAST_NAME}} }
+
+\begin{document}
+\tagline{ {{TAGLINE}} }
+\personalinfo{%
+  \email{ {{EMAIL}} }
+  \linkedin{ {{LINKEDIN}} }
+  \github{ {{GITHUB}} }
+  \phone{ {{PHONE}} }
+}
+
+\bio{ {{SUMMARY_TEXT}} }
+
+\makecvheader
+
+{{BEGIN_SKILLS}}
+\cvsection{Skills}
+\begin{center}
+  \begin{multicols}{3} % Tự động cân đối số cột dựa trên lượng kỹ năng
+    {{SKILLS_LIST}}
+  \end{multicols}
+\end{center}
+{{END_SKILLS}}
+
+{{BEGIN_EDUCATIONS}}
+\cvsection{Education}
+\medskip
+\begin{multicols}{2}
+  {{EDUCATIONS_LIST}}
+\end{multicols}
+{{END_EDUCATIONS}}
+
+{{BEGIN_EXPERIENCES}}
+\medskip
+\cvsection{Experience}
+{{EXPERIENCES_LIST}}
+{{END_EXPERIENCES}}
+
+{{BEGIN_PROJECTS}}
+\divider
+\cvsubsection{Other Activities and Projects}
+\medskip
+\begin{multicols}{2}
+  {{PROJECTS_LIST}}
+\end{multicols}
+{{END_PROJECTS}}
+
+{{BEGIN_ACHIEVEMENTS}}
+\medskip
+\cvsection{Awards}
+\medskip
+\begin{multicols}{2}
+  {{ACHIEVEMENTS_LIST}}
+\end{multicols}
+{{END_ACHIEVEMENTS}}
+
+{{BEGIN_LANGUAGES}}
+\cvsection{Languages}
+\medskip
+\begin{multicols}{3}
+  {{LANGUAGES_LIST}}
+\end{multicols}
+{{END_LANGUAGES}}
+
+\end{document}
