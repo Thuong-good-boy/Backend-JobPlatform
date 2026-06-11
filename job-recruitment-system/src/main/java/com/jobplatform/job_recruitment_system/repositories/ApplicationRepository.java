@@ -32,7 +32,7 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
         from Application a left join a.cv c
              left join MatchScore m on(c.id = m.cv.id AND m.job.id = a.job.id)
         where a.job.id=:jobId  
-        ORDER BY a.appliedAt DESC
+        ORDER BY a.appliedAt ASC
         """)
     List<ApplicationOnlyJobResponse> findListApplicationIncludeMatch(@Param("jobId") Long jobId);
     @Query("""

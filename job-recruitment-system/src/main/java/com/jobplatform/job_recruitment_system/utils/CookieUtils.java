@@ -14,12 +14,5 @@ public class CookieUtils {
                 .sameSite("Lax")
                 .build();
     }
-    public static ResponseCookie clearCookie(String cookieName) {
-        return ResponseCookie.from(cookieName, "")
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .maxAge(0)
-                .build();
-    }
+
 }

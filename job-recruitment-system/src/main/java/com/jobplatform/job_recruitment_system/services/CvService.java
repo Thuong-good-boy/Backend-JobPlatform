@@ -7,9 +7,11 @@ import com.jobplatform.job_recruitment_system.dtos.request.CvRequest;
 import com.jobplatform.job_recruitment_system.exceptions.AppException;
 import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
 import com.jobplatform.job_recruitment_system.models.Application;
+import com.jobplatform.job_recruitment_system.models.Candidate;
 import com.jobplatform.job_recruitment_system.models.Cv;
 import com.jobplatform.job_recruitment_system.models.User;
 import com.jobplatform.job_recruitment_system.repositories.ApplicationRepository;
+import com.jobplatform.job_recruitment_system.repositories.CandidateRepository;
 import com.jobplatform.job_recruitment_system.repositories.CvRepository;
 import com.jobplatform.job_recruitment_system.utils.ByteArrayMultipartFile;
 import com.jobplatform.job_recruitment_system.utils.LatexUtils;
@@ -17,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -47,6 +50,8 @@ public class CvService {
     private final AiMatchingService aiMatchingService;
     private  final UserService  userService;
     private  final ApplicationRepository applicationRepository;
+    private  final CandidateService candidateService;
+    private  final CandidateRepository candidateRepository;
     @Transactional
     public Cv uploadAndAnalyze(MultipartFile file) throws Exception {
 
@@ -69,6 +74,7 @@ public class CvService {
         }
         return savedCv;
     }
+
     public Cv createAndAnalyze(String urlfile) throws Exception {
 
         Long userId = userService.getCurrentUserId();
@@ -797,6 +803,24 @@ public class CvService {
             System.err.println("Lỗi parse chuỗi duration: " + duration + " -> Đưa về default 1900-01");
             return defaultMin;
         }
+    }
+    public String feedBack(Long cvId) throws Exception {
+        Long userId = userService.getCurrentUserId();
+        Candidate candidate = candidateService.getProfile(userId);
+
+        if (candidate.getAiPoints() <= 0) {
+            throw new RuntimeException("Bạn đã hết lượt sử dụng AI!");
+        }
+
+        candidate.setAiPoints(candidate.getAiPoints() - 1);
+        candidateRepository.save(candidate);
+
+        Cv cv = cvRepository.findById(cvId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy CV với ID: " + cvId));
+
+        String cvDataJson = cv.getCvData().toString();
+
+        return aiOcrService.evaluateCvFromJsonText(cvDataJson);
     }
 
 }

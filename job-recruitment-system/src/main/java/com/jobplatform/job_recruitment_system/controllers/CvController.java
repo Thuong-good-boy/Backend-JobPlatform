@@ -86,7 +86,6 @@ public class CvController {
     @PostMapping("/delete-url-cv")
     public void deleteurlCV(@RequestBody Map<String, String> payload) {
         String url = payload.get("pdfUrl");
-        System.out.println("cos vao dsd: ");
         fileUploadService.deleteFile(url);
     }
     @PostMapping("/" +

@@ -132,7 +132,11 @@ public class AuthController {
     public  ResponseEntity<?> getUserCurrent(){
         Long userId = userService.getCurrentUserId();
         User user = userService.getUserId(userId).orElseThrow(()-> new AppException(ErrorCode.AUTH_008));
-        return ResponseEntity.ok(Map.of("fullName",user.getFullName(),"role",user.getRole()));
+        Map<String, Object> response = new HashMap<>();
+        response.put("fullName", user.getFullName());
+        response.put("role", user.getRole());
+        response.put("avatarUrl", user.getAvatarUrl());
+        return ResponseEntity.ok(response);
     }
     @GetMapping("/currentid")
     public  ResponseEntity<?> getUserCurrentId(){

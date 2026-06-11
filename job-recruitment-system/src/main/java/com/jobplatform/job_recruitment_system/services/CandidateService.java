@@ -6,13 +6,16 @@ import com.jobplatform.job_recruitment_system.exceptions.AppException;
 import com.jobplatform.job_recruitment_system.exceptions.ErrorCode;
 import com.jobplatform.job_recruitment_system.mapper.CandidateMapper;
 import com.jobplatform.job_recruitment_system.models.Candidate;
+import com.jobplatform.job_recruitment_system.models.Company;
 import com.jobplatform.job_recruitment_system.models.User;
 import com.jobplatform.job_recruitment_system.repositories.CandidateRepository;
 import com.jobplatform.job_recruitment_system.repositories.UserRepository;
 import com.jobplatform.job_recruitment_system.repositories.UserSubscriptionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +28,7 @@ public class CandidateService {
     private final UserService userService;
     private  final UserSubscriptionRepository userSubscriptionRepository;
     private  final  UnlockedCvService unlockedCvService;
+    private  final FileUploadService fileUploadService;
     @Transactional
     public Candidate saveOrUpdateProfile(Long userId, Candidate profileData) {
         Candidate candidate = candidateRepository.findByUserId(userId)
@@ -53,6 +57,27 @@ public class CandidateService {
                 .orElse(new Candidate());
         candidateMapper.upCadidateByDTO(dto,candidate);
         candidateRepository.save(candidate);
+    }
+    @Transactional
+    public  void postLogo(MultipartFile logo){
+        Long userId = userService.getCurrentUserId();
+        User candidate = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.AUTH_008));
+        try {
+            String logoUrl = fileUploadService.uploadFile(logo);
+            deleteAvatarCu(candidate.getAvatarUrl());
+            candidate.setAvatarUrl(logoUrl);
+            userRepository.save(candidate);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+
+    }
+    @Async
+    public  void deleteAvatarCu(String urlAvatar){
+        fileUploadService.deleteFile(urlAvatar);
+
     }
 
     public CandidateProfileResponse getMyProfile(){

@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -125,19 +126,21 @@ public class  ApplicationService {
     }
     public List<ApplicationOnlyJobResponse> getApplicationsByJobId(Long jobId, String sortBy) {
         List<ApplicationOnlyJobResponse> applications = applicationRepository.findListApplicationIncludeMatch(jobId);
-        if(applications == null){
-            return  List.of();
+
+        if (applications == null || applications.isEmpty()) {
+            return new ArrayList<>();
         }
-        if("score".equalsIgnoreCase(sortBy)){
-            applications.sort((a,b)-> Double.compare(
-                    a.getAiMatchScore() !=null ? a.getAiMatchScore() :0.0,
-                    b.getAiMatchScore() !=null ? b.getAiMatchScore(): 0.0
+
+        if ("scores".equalsIgnoreCase(sortBy)) {
+            applications.sort((a, b) -> Double.compare(
+                    b.getAiMatchScore() != null ? b.getAiMatchScore() : 0.0,
+                    a.getAiMatchScore() != null ? a.getAiMatchScore() : 0.0
             ));
-        }else{
+        } else {
             java.util.Collections.reverse(applications);
         }
-        return applications;
 
+        return applications;
     }
     @Transactional
     public Boolean updateApplicationStatus(Long applicationId, AppStatus newStatus) {

@@ -64,14 +64,7 @@ public class AiOcrService {
         headers.setContentType(MediaType.APPLICATION_JSON);
         return headers;
     }
-    private HttpHeaders createOpenRouterHeaders() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Bearer " + apiKeys);
-        headers.set("HTTP-Referer", "https://pathuongdev.id.vn");
-        headers.set("X-Title", "Job Recruitment System");
-        return headers;
-    }
+
 
     public OcrResultReponse extractCompanyInfo(MultipartFile file) throws IOException {
         System.out.println("có vào ai : ");
@@ -158,7 +151,7 @@ public class AiOcrService {
                 "  \"gitlab\": \"\",\n" +
                 "  \"orcid\": \"\",\n" +
                 "  \"philosophy\": \"\",\n" +
-                "  \"templateName\": \"\",\n" +
+                "  \"templateName\": template(không đổi thuộc tính này đây là mặc định.),\n" +
                 "  \"skills\": [],\n" +
                 "  \"experiences\": [\n" +
                 "    {\n" +
@@ -270,13 +263,7 @@ public class AiOcrService {
                 - Xem xét GPA, xếp loại tốt nghiệp, học bổng, giải thưởng, chứng chỉ và các thành tích liên quan.
                 - Chỉ cộng điểm khi các yếu tố này thực sự hỗ trợ cho vị trí tuyển dụng.
                 
-                4. overallScore (0.0 - 100.0)
-                - Tự động xác định tầm quan trọng của kỹ năng, kinh nghiệm và học vấn dựa trên JD.
-                - Không sử dụng trọng số cố định.
-                - Với mỗi vị trí tuyển dụng, hãy tự suy luận yếu tố nào quan trọng hơn.
-                - overallScore phải phản ánh mức độ phù hợp tổng thể với JD.
-                
-                5. reason
+                4. reason
                 - Giải thích ngắn gọn dưới 30 từ.
                 - Nêu rõ điểm mạnh và điểm còn thiếu quan trọng nhất.
                 
@@ -332,63 +319,113 @@ public class AiOcrService {
 
         return finalResponse;
     }
-    public String evaluateCvFromUrl(String fileUrl) throws Exception {
-        List<Map<String, Object>> partsList = new ArrayList<>();
-
-        String prompt = "Bạn là một Headhunter cấp cao kiêm Chuyên gia Copywriter. Hãy đọc thật kỹ nội dung trong (các) hình ảnh CV này.\n" +
-                "Nhiệm vụ của bạn KHÔNG PHẢI là đánh giá thiết kế, mà là TỐI ƯU HÓA NỘI DUNG. Hãy:\n" +
-                "1. Soi và nhặt ra các lỗi chính tả, lỗi gõ phím, lỗi ngữ pháp tiếng Việt/tiếng Anh.\n" +
-                "2. Tìm các câu văn lủng củng, diễn đạt yếu hoặc mô tả kinh nghiệm chưa đủ 'chạm' và viết lại chúng sao cho chuyên nghiệp, ấn tượng và mang ngôn ngữ của người đạt thành tựu (hướng kết quả).\n" +
-                "Trả về kết quả dưới dạng JSON có cấu trúc sau:\n" +
-                "{\n" +
-                "  \"spelling_and_grammar\": [\n" +
-                "    {\"error\": \"[Trích dẫn từ viết sai/lỗi]\", \"fix\": \"[Từ/câu sửa lại cho đúng]\"}\n" +
-                "  ],\n" +
-                "  \"better_phrasing\": [\n" +
-                "    {\"original\": \"[Câu gốc lủng củng/yếu trong CV]\", \"suggestion\": \"[Câu viết lại sắc bén, chuyên nghiệp hơn]\"}\n" +
-                "  ],\n" +
-                "  \"general_advice\": [\"[Lời khuyên 1 về cách hành văn/nội dung]\", \"[Lời khuyên 2]\"]\n" +
-                "}\n" +
-                "YÊU CẦU QUAN TRỌNG: Chỉ trả về ĐÚNG chuỗi JSON hợp lệ, không bọc trong thẻ Markdown (như ```json), không giải thích thêm bất kỳ câu nào bên ngoài JSON.";
-
-        partsList.add(Map.of("text", prompt));
-
-        URL url = new URL(fileUrl);
-        try (InputStream in = url.openStream()) {
-            if (fileUrl.toLowerCase().endsWith(".pdf") || fileUrl.contains("cloudinary.com")) {
-                try (PDDocument document = PDDocument.load(in)) {
-                    PDFRenderer pdfRenderer = new PDFRenderer(document);
-
-                    int pageCount = Math.min(document.getNumberOfPages(), 3);
-
-                    for (int page = 0; page < pageCount; page++) {
-                        BufferedImage bim = pdfRenderer.renderImageWithDPI(page, 150);
-                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                        ImageIO.write(bim, "jpeg", baos);
-
-                        String base64Image = Base64.getEncoder().encodeToString(baos.toByteArray());
-
-                        partsList.add(Map.of("inlineData", Map.of(
-                                "mimeType", "image/jpeg",
-                                "data", base64Image.replaceAll("[\\s\\r\\n]", "")
-                        )));
+    public String evaluateCvFromJsonText(String cvJsonData) throws Exception {
+        String prompt = """
+                Bạn là chuyên gia tuyển dụng (Headhunter) và chuyên gia review CV IT.
+                
+                CV được cung cấp dưới dạng JSON.
+                
+                DỮ LIỆU CV:
+                %s
+                
+                CẤU TRÚC JSON:
+                
+                - fullName: họ tên
+                - jobTitle: vị trí ứng tuyển
+                - philosophy: mục tiêu hoặc câu châm ngôn
+                - educations[].details
+                - experiences[].description[]
+                - projects[].description[]
+                - achievements[].title
+                - achievements[].details
+                
+                NHIỆM VỤ:
+                
+                1. spelling_and_grammar
+                Chỉ kiểm tra lỗi chính tả, lỗi đánh máy, lỗi ngữ pháp trong các trường:
+                
+                - philosophy
+                - educations.details
+                - experiences.description
+                - projects.description
+                - achievements.title
+                - achievements.details
+                
+                KHÔNG kiểm tra:
+                
+                - email
+                - phone
+                - github
+                - gitlab
+                - linkedin
+                - homepage
+                - avatarUrl
+                - templateName
+                - skills
+                - company
+                - university
+                - role
+                - duration
+                - address
+                - tên công nghệ
+                - tên framework
+                - tên công ty
+                - tên dự án
+                
+                Nếu không có lỗi => trả về [].
+                
+                2. better_phrasing
+                
+                Chỉ đề xuất viết lại khi câu:
+                - thiếu chuyên nghiệp
+                - khó hiểu
+                - diễn đạt chưa tự nhiên
+                
+                Không sửa các câu đã ổn.
+                
+                3. general_advice
+                
+                Đưa tối đa 3 nhận xét thực tế về CV.
+                
+                QUAN TRỌNG:
+                
+                - Không bịa lỗi.
+                - Không tạo ví dụ minh họa.
+                - Không suy đoán thông tin ngoài CV.
+                - Nếu độ chắc chắn dưới 90%% thì bỏ qua.
+                - Chỉ trả về JSON hợp lệ.
+                - Không markdown.
+                - Không giải thích.
+                
+                JSON schema:
+                
+                {
+                  "spelling_and_grammar": [
+                    {
+                      "field": "string",
+                      "error": "string",
+                      "fix": "string"
                     }
+                  ],
+                  "better_phrasing": [
+                    {
+                      "field": "string",
+                      "original": "string",
+                      "suggestion": "string"
+                    }
+                  ],
+                  "general_advice": [
+                    "string"
+                  ]
                 }
-            } else {
-                byte[] fileBytes = in.readAllBytes();
-                String mimeType = fileUrl.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
-                String base64Image = Base64.getEncoder().encodeToString(fileBytes);
-
-                partsList.add(Map.of("inlineData", Map.of(
-                        "mimeType", mimeType,
-                        "data", base64Image.replaceAll("[\\s\\r\\n]", "")
-                )));
-            }
-        }
-
+                """.formatted(cvJsonData);
         Map<String, Object> requestBody = Map.of(
                 "contents", List.of(
-                        Map.of("parts", partsList)
+                        Map.of("parts", List.of(Map.of("text", prompt)))
+                ),
+                "generationConfig", Map.of(
+                        "temperature", 0.1,
+                        "responseMimeType", "application/json"
                 )
         );
 
@@ -416,20 +453,17 @@ public class AiOcrService {
                 jsonFeedback = "{}";
             }
 
-            String prompt = "Bạn là một Headhunter cấp cao kiêm Copywriter chuyên nghiệp.\n\n" +
-                    "Dưới đây là dữ liệu CV gốc của ứng viên (định dạng JSON):\n" +
-                    jsonInput + "\n\n" +
-                    "Dưới đây là danh sách các lỗi chính tả, lỗi ngữ pháp và các gợi ý nâng cấp văn phong cần áp dụng (định dạng JSON):\n" +
-                    jsonFeedback + "\n\n" +
-                    "Nhiệm vụ của bạn:\n" +
-                    "1. Hãy đọc kỹ danh sách gợi ý trong 'better_phrasing' và sửa đổi/thay thế chính xác các câu tương ứng có trong CV gốc.\n" +
-                    "2. Kiểm tra và khắc phục thêm các lỗi trong 'spelling_and_grammar' (nếu có) vào các trường dữ liệu tương ứng.\n" +
-                    "3. Nâng cấp văn phong tại các field: 'summary', 'description' dựa trên các gợi ý đó sao cho chuyên nghiệp, sắc bén.\n" +
-                    "4. TUYỆT ĐỐI KHÔNG thay đổi cấu trúc JSON ban đầu của CV (keys, mảng, object).\n" +
-                    "5. TUYỆT ĐỐI KHÔNG thay đổi dữ liệu của các field định danh: fullName, email, phone, avatarUrl, address, github, linkedin, templateName, ngày tháng.\n\n" +
-                    "YÊU CẦU TỐI THƯỢNG: Chỉ trả về duy nhất chuỗi JSON hợp lệ của CV đã được nâng cấp hoàn chỉnh theo đúng cấu trúc cũ. Không bọc trong thẻ Markdown (như ```json), không giải thích thêm.";
 
-            // 1. Chuyển đổi cấu trúc Body sang chuẩn yêu cầu của Google Gemini API
+            String prompt = "Bạn là một AI xử lý dữ liệu JSON chuyên nghiệp. Bạn phải đóng vai Copywriter để nâng cấp CV.\n\n" +
+                    "Dữ liệu CV gốc (JSON):\n" + jsonInput + "\n\n" +
+                    "Danh sách Feedback cần áp dụng (JSON):\n" + jsonFeedback + "\n\n" +
+                    "QUY TẮC XỬ LÝ (BẮT BUỘC TUÂN THỦ):\n" +
+                    "1. VỀ CẤU TRÚC (KEYS): Giữ nguyên 100% các Key và định dạng mảng/đối tượng của JSON gốc. Không được thêm, bớt, hay đổi tên bất kỳ Key nào để đảm bảo hệ thống LaTeX biên dịch không bị lỗi.\n" +
+                    "2. VỀ DỮ LIỆU ĐỊNH DANH: Giữ nguyên y hệt giá trị (Value) của fullName, email, phone, avatarUrl, address, github, linkedin, templateName, và các mốc thời gian.\n" +
+                    "3. VỀ NỘI DUNG CẦN NÂNG CẤP (VALUES): Bạn ĐƯỢC PHÉP và BẮT BUỘC phải thay đổi nội dung bên trong các trường 'description', 'role', 'summary'. Hãy đối chiếu với 'better_phrasing' và 'spelling_and_grammar' từ Feedback để GHI ĐÈ nội dung mới vào bản gốc.\n" +
+                    "AI cần linh hoạt nhận diện câu gốc dù có sai sót nhỏ về dấu câu hay đánh máy.\n\n" +
+                    "ĐẦU RA: Chỉ trả về duy nhất chuỗi JSON đã nâng cấp, không bọc bằng markdown (```json).";
+
             Map<String, Object> requestBody = Map.of(
                     "contents", List.of(
                             Map.of("parts", List.of(
@@ -437,13 +471,15 @@ public class AiOcrService {
                             ))
                     ),
                     "generationConfig", Map.of(
-                            "temperature", 0.2
+                            "temperature", 0.4,
+                            "topK", 40,
+                            "topP", 0.9,
+                            "responseMimeType", "application/json"
                     )
             );
 
             CvRequest aiResponse = callGeminiAndParseJson("gemini-2.5-flash-lite", requestBody, CvRequest.class);
 
-            // 3. Nếu AI trả về null (do lỗi key hoặc parse thất bại), kích hoạt luồng fallback về data gốc
             if (aiResponse == null) {
                 System.err.println("AI xử lý thất bại hoặc lỗi kết nối, fallback về data gốc.");
                 return mapper.readValue(jsonInput, CvRequest.class);
@@ -490,7 +526,7 @@ public class AiOcrService {
                         ))
                 ),
                 "generationConfig", Map.of(
-                        "temperature", 0.0 // Giữ chặt độ chính xác, không cho AI sáng tạo lung tung
+                        "temperature", 0.0
                 )
         );
 

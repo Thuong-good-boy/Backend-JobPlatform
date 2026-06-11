@@ -40,6 +40,7 @@ public class FileUploadService {
             System.err.println("Lỗi khi xóa ảnh: " + e.getMessage());
         }
     }
+    @Async
     public void deleteFile(String fileUrl) {
         try {
             String publicId = getPublicIdFromUrl(fileUrl);

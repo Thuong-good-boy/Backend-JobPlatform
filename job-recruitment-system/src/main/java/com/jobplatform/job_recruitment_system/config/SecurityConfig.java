@@ -81,6 +81,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST,"/api/company/unlock-cv").hasAuthority("COMPANY")
                         .requestMatchers(HttpMethod.GET,"/api/cv-templates").hasAuthority("CANDIDATE")
                         .requestMatchers(HttpMethod.POST, "/api/cvs/update-logo").hasAuthority("CANDIDATE")
+                        .requestMatchers(HttpMethod.POST, "/api/candidate/update-logo").hasAuthority("CANDIDATE")
                         .requestMatchers(HttpMethod.POST, "/api/cvs/delete-url-cv").hasAuthority("CANDIDATE")
                         .requestMatchers(HttpMethod.POST, "/api/cvs/save-url-cv").hasAuthority("CANDIDATE")
                         .requestMatchers(HttpMethod.POST, "/api/cvs/generate-pdf-with-ai").hasAuthority("CANDIDATE")

@@ -195,7 +195,15 @@ public class PaymentService {
 
                             if(PackageType.COMPANY_PRO.equals(aPackage.getType())|| PackageType.CANDIDATE_PRO.equals(aPackage.getType())){
                                 UserSubscription existingSub = userSubscriptionRepository.findActiveSubscription(user.getId());
+                                boolean ispro = userSubscriptionRepository.userispro(existingSub.getUser().getId());
+                                if (PackageType.CANDIDATE_PRO.equals(aPackage.getType()) && !ispro) {
+                                    List<Cv> dsCv = cvRepository.findAllByUser_IdAndActiveTrueOrderByCreatedAtDesc(user.getId());
+                                    for (Cv cv : dsCv) {
+                                        aiMatchingService.processNewCv(cv);
+                                    }
+                                }
                                 if(existingSub != null){
+                                    System.out.println("ngày còn lại : " + existingSub.getEndDate() + "   ngày cộng vào : " + aPackage.getDurationDays());
                                     existingSub.setEndDate(existingSub.getEndDate().plusDays(aPackage.getDurationDays()));
                                     existingSub.setJobPackage(aPackage);
                                     userSubscriptionRepository.save(existingSub);
@@ -210,12 +218,7 @@ public class PaymentService {
                                     newSub.setCreateAt(LocalDateTime.now());
                                     userSubscriptionRepository.save(newSub);
                                 }
-                                if (PackageType.CANDIDATE_PRO.equals(aPackage.getType())) {
-                                    List<Cv> dsCv = cvRepository.findAllByUser_IdAndActiveTrueOrderByCreatedAtDesc(user.getId());
-                                    for (Cv cv : dsCv) {
-                                        aiMatchingService.processNewCv(cv);
-                                    }
-                                }
+
                             }
 
 

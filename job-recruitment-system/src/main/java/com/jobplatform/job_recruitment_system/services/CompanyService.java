@@ -15,8 +15,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // Lưu ý import đúng cái này
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.ObjectMapper;
@@ -64,7 +66,6 @@ public class CompanyService {
 
         try {
             OcrResultReponse ocrResultReponse = aiOcrService.extractCompanyInfo(request.getLicenseImage());
-            System.out.println("mã đây: "+ ocrResultReponse.getTaxCode());
             if (ocrResultReponse == null || ocrResultReponse.getTaxCode() == null) {
                 throw new AppException(ErrorCode.GPKD_002);
             }
@@ -77,15 +78,27 @@ public class CompanyService {
 
             RestTemplate restTemplate = new RestTemplate();
             String vietQrUrl = "https://api.vietqr.io/v2/business/" + taxCode;
+            VietQrResponse qrResponse = null;
 
-            VietQrResponse qrResponse = restTemplate.getForObject(vietQrUrl, VietQrResponse.class);
+            int maxRetries = 3;
+            for (int i = 0; i < maxRetries; i++) {
+                try {
+                    qrResponse = restTemplate.getForObject(vietQrUrl, VietQrResponse.class);
+                    break;
+                } catch (HttpClientErrorException.TooManyRequests e) {
+                    if (i == maxRetries - 1) {
+                        System.err.println("VietQR quá tải (429) sau 3 lần thử.");
+                        throw new AppException(ErrorCode.GPKD_004);
+                    }
+                    Thread.sleep(2000);
+                }
+            }
 
             if (qrResponse == null || !"00".equals(qrResponse.getCode()) || qrResponse.getData() == null) {
                 throw new AppException(ErrorCode.GPKD_004);
             }
 
             VietQrDataRequest officialData = qrResponse.getData();
-
             company.setCompanyName(officialData.getName());
             company.setTaxCode(officialData.getId());
             company.setAddress(officialData.getAddress());
@@ -94,26 +107,29 @@ public class CompanyService {
             String licenseUrl = fileUploadService.uploadFile(request.getLicenseImage());
             company.setLicenseImageUrl(licenseUrl);
 
-            if (ocrResultReponse.getWebsite() != null && !ocrResultReponse.getWebsite().isBlank()) {
-                String domain = ocrResultReponse.getWebsite()
-                        .replace("https://", "")
-                        .replace("http://", "")
-                        .replace("www.", "")
+            String websiteUrl = ocrResultReponse.getWebsite();
+            String finalLogoUrl = "";
+            if (websiteUrl != null && !websiteUrl.trim().isEmpty() && !websiteUrl.equalsIgnoreCase("null")) {
+                String domain = websiteUrl.replaceAll("^https?://", "")
+                        .replaceFirst("^www\\.", "")
                         .split("/")[0];
-                company.setLogoUrl("https://www.google.com/s2/favicons?domain=" + domain + "&sz=128");
+
+                finalLogoUrl = "https://www.google.com/s2/favicons?domain=" + domain + "&sz=128";
             } else {
+                // Fallback UI Avatar
                 String encodedName = officialData.getName().replace(" ", "+");
-                String fallbackLogoUrl = "https://ui-avatars.com/api/?name=" + encodedName + "&background=random&color=fff&size=128";
-                company.setLogoUrl(fallbackLogoUrl);
+                finalLogoUrl = "https://ui-avatars.com/api/?name=" + encodedName + "&background=random&color=fff&size=128";
             }
 
+            company.setLogoUrl(finalLogoUrl);
+            user.setAvatarUrl(finalLogoUrl);
         } catch (AppException e) {
             throw e;
         } catch (Exception e) {
             System.out.println("Lỗi hệ thống khi Onboarding: " + e.getMessage());
             throw new AppException(ErrorCode.GPKD_003);
         }
-
+        userRepository.save(user);
         companyRepository.save(company);
     }
 
@@ -208,18 +224,25 @@ public class CompanyService {
         Pageable  pageable = PageRequest.of(page,size);
         return companyRepository.searchCompaniesWithJobCount(pageable,keyword);
     }
+    @Transactional
     public  void postLogo(MultipartFile logo){
         Long userId = userService.getCurrentUserId();
         Company company = companyRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.COM_001));
         try {
             String logoUrl = fileUploadService.uploadFile(logo);
+            deleteAvatarCu(company.getLogoUrl());
             company.setLogoUrl(logoUrl);
             companyRepository.save(company);
         }catch (Exception e){
             e.printStackTrace();
         }
 
+
+    }
+    @Async
+    public  void deleteAvatarCu(String urlAvatar){
+        fileUploadService.deleteFile(urlAvatar);
 
     }
     public  Company getCompanyById(Long companyId){

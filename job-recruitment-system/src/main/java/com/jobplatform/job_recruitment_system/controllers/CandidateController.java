@@ -37,6 +37,7 @@ public class CandidateController {
      private  final ReportReasonsService reasonsService;
     private  final  AiOcrService aiOcrService;
     private  final CandidateRepository candidateRepository;
+    private  final CvService cvService;
     @PostMapping("/profile")
     public ResponseEntity<?> updateProfile( @RequestBody Candidate profile) {
         try {
@@ -76,26 +77,30 @@ public class CandidateController {
                 "company",company));
 
     }
+    @PostMapping("/update-logo")
+    public  void updateLogo(
+            @RequestParam("avatar") MultipartFile formData
+    ){
+        candidateService.postLogo(formData);
+    }
 
-    @PostMapping("/evaluate-cv-url")
-    public ResponseEntity<?> evaluateCvByUrl(@RequestBody Map<String, String> requestData) {
-        String cvUrl = requestData.get("cv_url");
+    @PostMapping("/evaluate-cv-id")
+    public ResponseEntity<?> evaluateCvById(@RequestBody Map<String, Object> requestData) {
 
-        if (cvUrl == null || cvUrl.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body("Link CV không được để trống!");
+        if (!requestData.containsKey("cvId") || requestData.get("cvId") == null) {
+            return ResponseEntity.badRequest().body("ID CV không được để trống!");
         }
 
         try {
-            Long userId = userService.getCurrentUserId();
-            Candidate candidate = candidateService.getProfile(userId);
-            candidate.setAiPoints(candidate.getAiPoints()-1);
-            candidateRepository.save(candidate);
-            String feedbackJson = aiOcrService.evaluateCvFromUrl(cvUrl);
+            Long cvId = Long.valueOf(requestData.get("cvId").toString());
+
+            String feedbackJson = cvService.feedBack(cvId);
             return ResponseEntity.ok(feedbackJson);
+
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Đã xảy ra lỗi khi tải hoặc phân tích CV: " + e.getMessage());
+                    .body("Đã xảy ra lỗi khi phân tích CV: " + e.getMessage());
         }
     }
 

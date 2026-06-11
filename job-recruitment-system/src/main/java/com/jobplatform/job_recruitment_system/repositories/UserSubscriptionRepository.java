@@ -32,4 +32,5 @@ public interface UserSubscriptionRepository  extends JpaRepository<UserSubscript
 
     @Query("select sum(p.price) from UserSubscription u join Package p on u.jobPackage.id= p.id ")
     Long getTotalDoanhThu();
+
 }
